@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.DevicesManagementController"
+            style="-fx-background-color: #f8fafc;">
+
+    <children>
+        <VBox spacing="15" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="20" AnchorPane.bottomAnchor="20">
+
+            <Label text="🧰 إدارة الأجهزة"
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="➕ إضافة جهاز جديد" onAction="#addDevice"
+                        style="-fx-background-color: #0891b2; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 10;"/>
+
+                <!-- 🔍 مربع البحث -->
+                <TextField fx:id="searchField" promptText="🔍 ابحث عن جهاز..."
+                           style="-fx-background-radius: 10; -fx-border-color: #cbd5e1; -fx-border-radius: 10; -fx-padding: 6 10;"/>
+            </HBox>
+
+            <TableView fx:id="devicesTable" prefHeight="500">
+                <columns>
+                    <TableColumn text="ID" prefWidth="60" fx:id="colID"/>
+                    <TableColumn text="اسم الجهاز" prefWidth="200" fx:id="colName"/>
+                    <TableColumn text="السيريال" prefWidth="200" fx:id="colSerial"/>
+                    <TableColumn text="تعديل" prefWidth="120" fx:id="colEdit"/>
+                    <TableColumn text="مكونات" prefWidth="120" fx:id="colComponents"/>
+                    <TableColumn text="حذف" prefWidth="120" fx:id="colDelete"/>
+                </columns>
+            </TableView>
+
+        </VBox>
+    </children>
+</AnchorPane>

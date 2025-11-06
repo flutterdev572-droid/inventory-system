@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.StockViewController"
+            prefWidth="900" prefHeight="600"
+            style="-fx-background-color: #f8fafc;">
+
+    <VBox spacing="15" alignment="TOP_CENTER"
+          AnchorPane.topAnchor="20"
+          AnchorPane.leftAnchor="20"
+          AnchorPane.rightAnchor="20">
+
+        <Label text="📦 المخزون الحالي" textFill="#1e293b" style="-fx-font-size:22px; -fx-font-weight:bold;"/>
+
+        <!-- شريط الأدوات -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="ابحث عن صنف..." prefWidth="220"
+                       style="-fx-background-radius:8; -fx-border-color:#cbd5e1; -fx-border-radius:8;"/>
+
+            <ComboBox fx:id="statusFilterCombo" prefWidth="150" promptText="فلتر الحالة"/>
+
+            <Button text="🔄 تحديث" fx:id="refreshButton" onAction="#onRefreshClicked"/>
+            <Button text="📤 تصدير إلى Excel" onAction="#onExportClicked"/>
+            <Button text="➕ إضافة (وارد)" fx:id="addStockButton" onAction="#onAddStock" style="-fx-background-color:#16a34a; -fx-text-fill:white;"/>
+            <Button text="➖ صرف (منصرف)" fx:id="removeStockButton" onAction="#onRemoveStock" style="-fx-background-color:#dc2626; -fx-text-fill:white;"/>
+        </HBox>
+
+        <!-- الجدول -->
+        <TableView fx:id="stockTable" prefHeight="500"
+                   style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
+            <columns>
+                <TableColumn fx:id="nameColumn" text="اسم الصنف" prefWidth="250"/>
+                <TableColumn fx:id="unitColumn" text="الوحدة" prefWidth="100"/>
+                <TableColumn fx:id="quantityColumn" text="الكمية" prefWidth="120"/>
+                <TableColumn fx:id="minQuantityColumn" text="الحد الأدنى" prefWidth="120"/>
+                <TableColumn fx:id="statusColumn" text="الحالة" prefWidth="120"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+</AnchorPane>

@@ -1,0 +1,60 @@
+.root {
+    -fx-font-family: "Cairo", "Segoe UI", sans-serif;
+}
+
+/* أزرار أساسية */
+.primary-button {
+    -fx-background-color: #3b82f6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+.primary-button:hover {
+    -fx-background-color: #2563eb;
+}
+
+.success-button {
+    -fx-background-color: #22c55e;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+}
+.success-button:hover {
+    -fx-background-color: #16a34a;
+}
+
+.info-button {
+    -fx-background-color: #0ea5e9;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+}
+.info-button:hover {
+    -fx-background-color: #0284c7;
+}
+.text-field, .combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 6 10 6 10;
+    -fx-font-size: 13px;
+}
+
+.text-field:focused, .combo-box:focused {
+    -fx-border-color: #3b82f6;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.3), 4, 0, 0, 0);
+}
+/* زرار صيانة وتوالف / خطأ / حذف */
+.danger-button {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.danger-button:hover {
+    -fx-background-color: #dc2626;
+}

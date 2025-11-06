@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.DeviceComponentsController"
+            style="-fx-background-color: #f8fafc;">
+
+    <children>
+        <VBox spacing="15" style="-fx-padding: 20;"
+              AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0"
+              AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0">
+
+            <Label text="📦 مكونات الجهاز"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+
+            <Button text="➕ إضافة مكون" onAction="#openAddComponentPopup"
+                    style="-fx-background-color: #2563eb; -fx-text-fill: white;
+                           -fx-background-radius: 10; -fx-padding: 8 16;"/>
+
+            <TableView fx:id="componentsTable" prefHeight="500">
+                <columns>
+                    <TableColumn fx:id="colItemName" text="الصنف" prefWidth="200"/>
+                    <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="120"/>
+                    <TableColumn fx:id="colEdit" text="تعديل" prefWidth="100"/>
+                    <TableColumn fx:id="colDelete" text="حذف" prefWidth="100"/>
+                </columns>
+            </TableView>
+
+        </VBox>
+    </children>
+
+</AnchorPane>

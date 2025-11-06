@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="app.controllers.StockOutController"
+      spacing="15" padding="20"
+      style="-fx-background-color:#f8fafc;">
+
+    <Label text="صرف الأصناف (خروج من المخزون)"
+           style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#1e293b;"/>
+
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" prefWidth="120"/>
+            <ColumnConstraints prefWidth="300"/>
+        </columnConstraints>
+
+        <Label text="الصنف:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="itemComboBox" prefWidth="300" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="الكمية:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="quantityField" promptText="أدخل الكمية" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="المستلم:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="receiverComboBox" editable="true" promptText="ابحث بالاسم أو الكود"
+                  prefWidth="300" GridPane.rowIndex="2" GridPane.columnIndex="1">
+            <tooltip>
+                <Tooltip text="اكتب اسم الموظف أو رقمه للبحث، ثم اختر من القائمة"/>
+            </tooltip>
+        </ComboBox>
+
+        <Label text="ملاحظات:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <TextArea fx:id="notesField" promptText="أي ملاحظات إضافية" prefRowCount="2"
+                  prefWidth="300" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Button fx:id="saveButton" text="💾 حفظ العملية" onAction="#handleSave"
+            styleClass="primary-button" prefHeight="40" prefWidth="150"/>
+
+    <Label text="الأصناف المتاحة:" style="-fx-font-weight:bold; -fx-text-fill:#475569;"/>
+
+    <TableView fx:id="itemsTable" prefHeight="300"
+               style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
+        <columns>
+            <TableColumn fx:id="nameColumn" text="اسم الصنف" prefWidth="200"/>
+            <TableColumn fx:id="qtyColumn" text="الكمية المتاحة" prefWidth="150"/>
+        </columns>
+    </TableView>
+
+</VBox>

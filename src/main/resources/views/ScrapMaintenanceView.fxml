@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.controllers.ScrapMaintenanceController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 15;">
+            <Label text="إدارة التوالف والصيانة" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <ComboBox fx:id="typeFilterCombo" promptText="اختر النوع" prefWidth="150"/>
+                <TextField fx:id="searchField" promptText="بحث..." prefWidth="250"/>
+                <Button text="تصدير Excel" onAction="#onExportClicked" style="-fx-background-color: #2E7D32; -fx-text-fill: white;"/>
+                <Button text="تحديث" onAction="#onRefreshClicked" style="-fx-background-color: #1565C0; -fx-text-fill: white;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="dataTable" style="-fx-padding: 10;">
+            <columns>
+                <TableColumn fx:id="typeColumn" text="النوع" prefWidth="100"/>
+                <TableColumn fx:id="itemNameColumn" text="اسم الصنف" prefWidth="200"/>
+                <TableColumn fx:id="quantityColumn" text="الكمية" prefWidth="100"/>
+                <TableColumn fx:id="receiverColumn" text="المستلم" prefWidth="150"/>
+                <TableColumn fx:id="employeeColumn" text="المسؤول" prefWidth="150"/>
+                <TableColumn fx:id="dateColumn" text="التاريخ" prefWidth="150"/>
+                <TableColumn fx:id="notesColumn" text="ملاحظات" prefWidth="200"/>
+            </columns>
+        </TableView>
+    </center>
+</BorderPane>

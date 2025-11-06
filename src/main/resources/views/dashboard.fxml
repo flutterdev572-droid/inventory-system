@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.shape.Rectangle?>
+
+<AnchorPane
+        xmlns="http://javafx.com/javafx/21"
+        xmlns:fx="http://javafx.com/fxml"
+        fx:controller="app.controllers.DashboardController"
+        style="-fx-background-color: #f7f9fc;">
+
+    <children>
+        <VBox spacing="30" AnchorPane.topAnchor="30" AnchorPane.leftAnchor="40" AnchorPane.rightAnchor="40" AnchorPane.bottomAnchor="30">
+
+            <!-- Header -->
+            <!-- Header -->
+            <HBox alignment="CENTER_LEFT" spacing="20">
+                <Label text="📦 لوحة التحكم - نظام إدارة المستودع"
+                       style="-fx-font-size: 26px; -fx-text-fill: #1e293b; -fx-font-weight: bold;"/>
+
+                <AnchorPane HBox.hgrow="ALWAYS"/>
+                <AnchorPane prefWidth="220" prefHeight="40"
+                            style="-fx-background-color: #e2e8f0; -fx-background-radius: 20;">
+                    <Label fx:id="dbStatusLabel" layoutX="15" layoutY="10"
+                           text="جاري فحص الاتصال..."
+                           style="-fx-text-fill: #0f172a; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                </AnchorPane>
+
+                <Button text="🔒 تسجيل الخروج"
+                        onAction="#logout"
+                        style="-fx-background-color: #e11d48; -fx-text-fill: white; -fx-font-size: 13px;
+                   -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand;"
+                        prefWidth="130" prefHeight="35"/>
+            </HBox>
+
+            <Label fx:id="loggedUserLabel" text="مرحباً: "
+                   style="-fx-text-fill: #334155; -fx-font-size: 14px; -fx-font-weight: bold;"
+                   AnchorPane.rightAnchor="250" AnchorPane.topAnchor="10"/>
+
+            <!-- Top cards -->
+            <HBox spacing="20" alignment="CENTER">
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #e0f2fe; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="إجمالي الأصناف" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #0369a1; -fx-font-size: 16px;"/>
+                        <Label fx:id="totalItemsLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #0c4a6e; -fx-font-size: 42px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #fef9c3; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="أصناف منخفضة المخزون" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #b45309; -fx-font-size: 16px;"/>
+                        <Label fx:id="lowStockLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #78350f; -fx-font-size: 42px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #dcfce7; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="إجمالي المعاملات" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #166534; -fx-font-size: 16px;"/>
+                        <Label fx:id="totalTransactionsLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #14532d; -fx-font-size: 42px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+
+                <!-- ✅ بطاقة إجمالي الأجهزة -->
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #fae8ff; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="عدد الأجهزة المسجّلة" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #86198f; -fx-font-size: 16px;"/>
+                        <Label fx:id="totalDevicesLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #701a75; -fx-font-size: 42px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+            </HBox>
+
+            <!-- Middle cards -->
+            <HBox spacing="20" alignment="CENTER">
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #dbeafe; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="إجمالي الكميات المضافة (IN)" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #1d4ed8; -fx-font-size: 15px;"/>
+                        <Label fx:id="totalInLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #1e3a8a; -fx-font-size: 36px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+
+                <AnchorPane HBox.hgrow="ALWAYS" prefHeight="150"
+                            style="-fx-background-color: #fee2e2; -fx-background-radius: 15;">
+                    <children>
+                        <Label text="إجمالي الكميات المصروفة (OUT)" layoutX="30" layoutY="30"
+                               style="-fx-text-fill: #b91c1c; -fx-font-size: 15px;"/>
+                        <Label fx:id="totalOutLabel" text="0" layoutX="30" layoutY="70"
+                               style="-fx-text-fill: #7f1d1d; -fx-font-size: 36px; -fx-font-weight: bold;"/>
+                    </children>
+                </AnchorPane>
+            </HBox>
+
+            <!-- Last Transaction -->
+            <AnchorPane prefHeight="80" style="-fx-background-color: #f1f5f9; -fx-background-radius: 15;">
+                <Label text="🕒 آخر عملية في النظام:" layoutX="30" layoutY="20"
+                       style="-fx-text-fill: #334155; -fx-font-size: 16px;"/>
+                <Label fx:id="lastTransactionLabel" layoutX="220" layoutY="20"
+                       text="لا توجد معاملات بعد"
+                       style="-fx-text-fill: #475569; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+            </AnchorPane>
+
+            <!-- Quick Actions -->
+            <HBox spacing="20" alignment="CENTER">
+
+                <Button text="➕ إضافة صنف جديد" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="success-button"
+                        onAction="#openAddItemPage"/>
+
+                <Button text="📦 إدارة المخزون" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="info-button"
+                        onAction="#openInventoryManagement"/>
+
+                <Button text="🧰 تسجيل جهاز جديد" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="warning-button"
+                        onAction="#openAddDevicePage"/>
+
+                <Button text="🧾 إدارة الأجهزة" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="primary-button"
+                        onAction="#openDevicesPage"/>
+
+                <Button text="📦 تتبّع السيريال" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="primary-button"
+                        onAction="#openSerialTracking"/>
+
+                <Button text="📊 التقارير" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="primary-button"
+                        onAction="#openReports"/>
+
+                <!-- ✅ زر الصيانة والتوالف الجديد -->
+                <Button text="🛠️ صيانة وتوالف" HBox.hgrow="ALWAYS" prefHeight="50"
+                        styleClass="danger-button"
+                        onAction="#onScrapMaintenanceClicked"/>
+            </HBox>
+        </VBox>
+    </children>
+</AnchorPane>

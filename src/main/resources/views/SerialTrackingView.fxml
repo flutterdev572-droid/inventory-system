@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="app.controllers.SerialTrackingController"
+      spacing="10" style="-fx-padding:10;">
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="جهاز:"/>
+        <ComboBox fx:id="deviceCombo" promptText="اختر الجهاز" prefWidth="260"/>
+
+        <Label text="من:" />
+        <DatePicker fx:id="startDatePicker" promptText="تاريخ البداية"/>
+        <Label text="إلى:" />
+        <DatePicker fx:id="endDatePicker" promptText="تاريخ النهاية"/>
+
+        <Button fx:id="refreshSerialsBtn" text="تحديث السيريالات"/>
+    </HBox>
+
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="سيريال:"/>
+        <ComboBox fx:id="serialCombo" promptText="اكتب للبحث أو اختر سيريال" prefWidth="360"/>
+        <Button text="عرض التتبع" onAction="#onShowSerial"/>
+
+        <!-- الأزرار الجديدة -->
+        <Button fx:id="showExceededBtn" text="عرض المتجاوزات فقط" style="-fx-background-color: #ffcccc; -fx-font-weight: bold;"/>
+        <Button fx:id="showAllBtn" text="عرض الكل" style="-fx-background-color: #ccffcc;"/>
+        <Button fx:id="exportExcelBtn" text="تصدير Excel" style="-fx-background-color: #ccccff; -fx-font-weight: bold;"/>
+    </HBox>
+
+    <TableView fx:id="usageTable" prefHeight="420">
+        <columns>
+            <TableColumn fx:id="colItem" text="المكون" prefWidth="220"/>
+            <TableColumn fx:id="colExpected" text="المفروض" prefWidth="100"/>
+            <TableColumn fx:id="colUsed" text="المستخدم" prefWidth="100"/>
+            <TableColumn fx:id="colStatus" text="الحالة" prefWidth="180"/>
+            <TableColumn fx:id="colDate" text="آخر استخدام" prefWidth="180"/>
+            <TableColumn fx:id="colUser" text="المستخدم" prefWidth="150"/>
+        </columns>
+    </TableView>
+</VBox>

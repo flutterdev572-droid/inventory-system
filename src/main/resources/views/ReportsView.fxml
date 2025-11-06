@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.controllers.ReportsController"
+            style="-fx-background-color: #f8fafc;">
+
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <HBox spacing="10">
+                <Label text="من:"/>
+                <DatePicker fx:id="fromDatePicker"/>
+
+                <Label text="إلى:"/>
+                <DatePicker fx:id="toDatePicker"/>
+
+                <Label text="نوع العملية:"/>
+                <ComboBox fx:id="typeFilter" promptText="الكل"/>
+
+                <!-- 🟢 مربع البحث -->
+                <Label text="العنصر:"/>
+                <ComboBox fx:id="itemSearchBox" promptText="ابحث عن صنف..." prefWidth="180" editable="true"/>
+
+                <Button fx:id="refreshButton" text="🔄 تحديث" onAction="#onRefreshClicked" styleClass="primary-button"/>
+                <Button fx:id="exportButton" text="📊 تصدير Excel" onAction="#onExportClicked" styleClass="success-button"/>
+            </HBox>
+
+            <!-- 🟢 السطر اللي بيعرض نتائج الداخل والخارج -->
+            <HBox spacing="20">
+                <Label fx:id="totalInLabel" style="-fx-text-fill:#15803d; -fx-font-weight:bold;"/>
+                <Label fx:id="totalOutLabel" style="-fx-text-fill:#dc2626; -fx-font-weight:bold;"/>
+                <Label fx:id="netLabel" style="-fx-text-fill:#1e40af; -fx-font-weight:bold;"/>
+                <Label fx:id="statusLabel" style="-fx-text-fill:#16a34a; -fx-font-weight:bold;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+
+    <center>
+        <TabPane fx:id="reportsTabs">
+            <Tab text="📦 معاملات المخزون">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <TableView fx:id="transactionsTable" prefHeight="500"
+                               style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
+                        <columns>
+                            <TableColumn text="الكود" fx:id="colTransID" prefWidth="60"/>
+                            <TableColumn text="الصنف" fx:id="colItemName" prefWidth="160"/>
+                            <TableColumn text="النوع" fx:id="colType" prefWidth="80"/>
+                            <TableColumn text="الكمية" fx:id="colQty" prefWidth="100"/>
+                            <TableColumn text="التاريخ" fx:id="colDate" prefWidth="160"/>
+                            <TableColumn text="الموظف" fx:id="colEmp" prefWidth="100"/>
+                            <TableColumn text="المستلم" fx:id="colReceiver" prefWidth="120"/>
+                            <TableColumn text="ملاحظات" fx:id="colNotes" prefWidth="160"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <Tab text="⚠️ الأصناف الناقصة">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <TableView fx:id="shortagesTable" prefHeight="500"
+                               style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
+                        <columns>
+                            <TableColumn text="الصنف" fx:id="colShortItem" prefWidth="180"/>
+                            <TableColumn text="الكمية الحالية" fx:id="colShortCurrent" prefWidth="140"/>
+                            <TableColumn text="الحد الأدنى" fx:id="colShortMin" prefWidth="140"/>
+                            <TableColumn text="تاريخ الكشف" fx:id="colShortDate" prefWidth="180"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <Tab text="📝 السجل (Logs)">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <TableView fx:id="logsTable" prefHeight="500"
+                               style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
+                        <columns>
+                            <TableColumn text="الحدث" fx:id="colLogAction" prefWidth="180"/>
+                            <TableColumn text="الوصف" fx:id="colLogDesc" prefWidth="300"/>
+                            <TableColumn text="الموظف" fx:id="colLogEmp" prefWidth="100"/>
+                            <TableColumn text="التاريخ" fx:id="colLogDate" prefWidth="180"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>

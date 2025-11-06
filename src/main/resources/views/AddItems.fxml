@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.AddItemsController"
+            prefWidth="900" prefHeight="600"
+            style="-fx-background-color: #f8fafc;">
+
+    <children>
+
+        <!-- العنوان -->
+        <Label text="إدارة الأصناف"
+               layoutX="340" layoutY="25"
+               style="-fx-text-fill: #1e293b; -fx-font-size: 26px; -fx-font-weight: bold;"/>
+
+        <!-- صندوق الإدخال -->
+        <VBox spacing="15" layoutX="40" layoutY="80" prefWidth="350"
+              style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+            <children>
+                <Label text="إضافة صنف جديد" style="-fx-text-fill: #1e293b; -fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+                <TextField fx:id="itemNameField" promptText="اسم الصنف"
+                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
+                <ComboBox fx:id="unitComboBox" promptText="وحدة القياس"
+                          style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
+                <TextField fx:id="minQuantityField" promptText="الحد الأدنى (مثلاً 10.0)"
+                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
+                <TextField fx:id="initialQuantityField" promptText="الكمية المبدئية (اختياري)"
+                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
+                <Button text="➕ إضافة الصنف"
+                        onAction="#onAddItem"
+                        styleClass="success-button"
+                        prefHeight="40"/>
+            </children>
+        </VBox>
+        <!-- صندوق إضافة وحدة جديدة -->
+        <VBox spacing="10" layoutX="40" layoutY="350" prefWidth="350"
+              style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 1);">
+            <padding>
+                <Insets top="15" right="20" bottom="15" left="20"/>
+            </padding>
+            <children>
+                <Label text="إضافة وحدة جديدة" style="-fx-text-fill: #1e293b; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <HBox spacing="10">
+                    <TextField fx:id="newUnitField" promptText="اكتب اسم الوحدة"
+                               style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS"/>
+                    <Button text="➕" onAction="#onAddUnit"
+                            style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
+                </HBox>
+            </children>
+        </VBox>
+
+
+        <!-- البحث -->
+        <TextField fx:id="searchField"
+                   layoutX="420" layoutY="80"
+                   prefWidth="420"
+                   promptText="🔍 ابحث عن صنف..."
+                   style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-color: white;"/>
+
+        <!-- الجدول -->
+        <TableView fx:id="itemsTable"
+                   layoutX="420" layoutY="130"
+                   prefWidth="420" prefHeight="400"
+                   style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-radius: 10;">
+            <columns>
+                <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="150"/>
+                <TableColumn fx:id="colUnit" text="الوحدة" prefWidth="80"/>
+                <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="70"/>
+                <TableColumn fx:id="colMinQuantity" text="الحد الأدنى" prefWidth="70"/>
+                <TableColumn fx:id="colActions" text="إجراءات" prefWidth="80"/>
+            </columns>
+        </TableView>
+
+        <!-- الحالة -->
+        <Label fx:id="statusLabel"
+               layoutX="40" layoutY="550"
+               style="-fx-text-fill: #334155; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+    </children>
+</AnchorPane>

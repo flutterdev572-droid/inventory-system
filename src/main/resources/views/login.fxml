@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane prefWidth="900" prefHeight="550"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.LoginController"
+            style="-fx-background-color: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);">
+
+    <center>
+        <StackPane alignment="CENTER">
+            <!-- Login Card -->
+            <VBox spacing="15" alignment="CENTER"
+                  style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 12;
+             -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 10, 0, 0, 5);"
+                  maxWidth="300"
+                  maxHeight="400"
+                  prefWidth="150"
+                  prefHeight="400">
+
+                <!-- Logo -->
+                <ImageView fitWidth="100" fitHeight="100" preserveRatio="true">
+                    <image>
+                        <Image url="@../images/colord_logo.png"/>
+                    </image>
+                </ImageView>
+
+                <Label text="Chem Tech"
+                       style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
+
+                <TextField fx:id="txtEmployeeId" promptText="Employee ID"
+                           style="-fx-background-radius: 6; -fx-padding: 8; -fx-pref-width: 220;"/>
+
+                <!-- Password Field with Eye Icon -->
+                <StackPane maxWidth="250">
+                    <PasswordField fx:id="txtPassword" promptText="Password"
+                                   style="-fx-background-radius: 6; -fx-padding: 8; -fx-pref-width: 250;"/>
+                    <TextField fx:id="txtPasswordVisible" promptText="Password"
+                               style="-fx-background-radius: 6; -fx-padding: 8; -fx-pref-width: 220;"
+                               visible="false"/>
+
+                    <!-- Eye Icon Button -->
+                    <Button fx:id="btnTogglePassword"
+                            style="-fx-background-color: transparent; -fx-padding: 5;"
+                            maxHeight="1.7976931348623157E308"
+                            StackPane.alignment="CENTER_RIGHT">
+                        <graphic>
+                            <ImageView fx:id="eyeIcon" fitWidth="20" fitHeight="20" preserveRatio="true">
+                                <image>
+                                    <!-- You can replace this with your own eye icon -->
+                                    <Image url="@../images/eye-closed.png"/>
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
+                </StackPane>
+
+                <Label fx:id="lblError" textFill="red" visible="false"
+                       style="-fx-font-weight: bold;"/>
+
+                <Button text="Login" onAction="#handleLogin"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;
+                               -fx-font-size: 14px; -fx-background-radius: 6; -fx-padding: 8 35;"/>
+
+                <ProgressIndicator fx:id="loginLoading" visible="false" prefWidth="40" prefHeight="40"/>
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>

@@ -60,6 +60,11 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.5</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>20.0.2</version> <!-- تأكد من إصدار JavaFX المناسب لديك -->
+        </dependency>
 
 
         <!-- ✅ SQL Server JDBC Driver -->
@@ -67,6 +72,12 @@
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
             <version>11.2.3.jre17</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>11.2.1</version>
         </dependency>
 
         <!-- ✅ Logging -->

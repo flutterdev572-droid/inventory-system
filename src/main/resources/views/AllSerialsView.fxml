@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="app.controllers.AllSerialsController"
+      spacing="10" style="-fx-padding: 15;" prefWidth="600" prefHeight="500">
+
+    <Label text="اختر سيريال:" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+    <TableView fx:id="serialsTable" prefHeight="400">
+        <columns>
+            <TableColumn fx:id="colSerial" text="رقم السيريال" prefWidth="300"/>
+            <TableColumn fx:id="colCreatedAt" text="تاريخ الإنشاء" prefWidth="250"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="selectBtn" text="اختيار السيريال"
+                style="-fx-background-color: #22c55e; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        <Button fx:id="closeBtn" text="إغلاق"
+                style="-fx-background-color: #6b7280; -fx-text-fill: white;"/>
+    </HBox>
+</VBox>

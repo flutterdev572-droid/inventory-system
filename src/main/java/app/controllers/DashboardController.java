@@ -7,7 +7,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -24,12 +27,11 @@ public class DashboardController {
     @FXML private Label totalTransactionsLabel;
     @FXML private Label totalInLabel;
     @FXML private Label totalOutLabel;
-    @FXML private Label lastTransactionLabel;
     @FXML private Label loggedUserLabel;
     @FXML private Label totalDevicesLabel;
+    @FXML private VBox lastTransactionContainer; // ✅ بدلاً من label واحد
 
-
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public void setLoggedEmployeeName(String name) {
         if (loggedUserLabel != null) {
@@ -39,7 +41,6 @@ public class DashboardController {
 
     @FXML
     public void initialize() {
-        // عرض حالة الاتصال
         String status = DatabaseConnection.testConnection();
         dbStatusLabel.setText(status);
         if (status.contains("نجاح")) {
@@ -50,10 +51,8 @@ public class DashboardController {
             dbStatusLabel.setStyle("-fx-text-fill: orange; -fx-font-weight: bold;");
         }
 
-        // تحميل الإحصائيات أول مرة
         loadDashboardStats();
 
-        // ✅ تحديث تلقائي كل 5 ثواني
         Timeline timeline = new Timeline(
                 new KeyFrame(Duration.seconds(5), event -> loadDashboardStats())
         );
@@ -62,159 +61,152 @@ public class DashboardController {
     }
 
     private void loadDashboardStats() {
-        try (Connection conn = DatabaseConnection.getInventoryConnection()) {
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getInventoryConnection();
 
-            // إجمالي الأصناف
-            String totalItemsSQL = "SELECT COUNT(*) AS total FROM Items";
-            PreparedStatement stmt = conn.prepareStatement(totalItemsSQL);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                totalItemsLabel.setText(String.valueOf(rs.getInt("total")));
+            if (conn == null) {
+                showDisconnectedStatus("⚠️ لا يوجد اتصال بقاعدة البيانات");
+                return;
             }
 
-            // الأصناف منخفضة المخزون
-            String lowStockSQL = """
-            SELECT COUNT(*) AS low_stock
-            FROM Items i
-            JOIN StockBalances s ON i.ItemID = s.ItemID
-            WHERE s.Quantity < i.MinQuantity
-        """;
-            stmt = conn.prepareStatement(lowStockSQL);
+            dbStatusLabel.setText("✅ متصل بقاعدة البيانات");
+            dbStatusLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+
+            PreparedStatement stmt;
+            ResultSet rs;
+
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Items");
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                lowStockLabel.setText(String.valueOf(rs.getInt("low_stock")));
-            }
-            // ✅ إجمالي الأجهزة
-            String totalDevicesSQL = "SELECT COUNT(*) AS total_devices FROM Devices";
-            stmt = conn.prepareStatement(totalDevicesSQL);
+            if (rs.next()) totalItemsLabel.setText(String.valueOf(rs.getInt("total")));
+
+            stmt = conn.prepareStatement("""
+                SELECT COUNT(*) AS low_stock
+                FROM Items i
+                JOIN StockBalances s ON i.ItemID = s.ItemID
+                WHERE s.Quantity < i.MinQuantity
+            """);
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                totalDevicesLabel.setText(String.valueOf(rs.getInt("total_devices")));
-            }
+            if (rs.next()) lowStockLabel.setText(String.valueOf(rs.getInt("low_stock")));
 
-
-            // إجمالي المعاملات
-            String totalTransSQL = "SELECT COUNT(*) AS total_trans FROM StockTransactions";
-            stmt = conn.prepareStatement(totalTransSQL);
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total_devices FROM Devices");
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                totalTransactionsLabel.setText(String.valueOf(rs.getInt("total_trans")));
-            }
+            if (rs.next()) totalDevicesLabel.setText(String.valueOf(rs.getInt("total_devices")));
 
-            // إجمالي الكميات المضافة
-            String totalInSQL = "SELECT ISNULL(SUM(Quantity), 0) AS total_in FROM StockTransactions WHERE TransactionType = 'IN'";
-            stmt = conn.prepareStatement(totalInSQL);
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total_trans FROM StockTransactions");
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                totalInLabel.setText(String.valueOf(rs.getDouble("total_in")));
-            }
+            if (rs.next()) totalTransactionsLabel.setText(String.valueOf(rs.getInt("total_trans")));
 
-            // إجمالي الكميات المصروفة
-            String totalOutSQL = "SELECT ISNULL(SUM(Quantity), 0) AS total_out FROM StockTransactions WHERE TransactionType = 'OUT'";
-            stmt = conn.prepareStatement(totalOutSQL);
+            stmt = conn.prepareStatement("SELECT ISNULL(SUM(Quantity), 0) AS total_in FROM StockTransactions WHERE TransactionType = 'IN'");
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                totalOutLabel.setText(String.valueOf(rs.getDouble("total_out")));
-            }
+            if (rs.next()) totalInLabel.setText(String.valueOf(rs.getInt("total_in")));
 
+            stmt = conn.prepareStatement("SELECT ISNULL(SUM(Quantity), 0) AS total_out FROM StockTransactions WHERE TransactionType = 'OUT'");
+            rs = stmt.executeQuery();
+            if (rs.next()) totalOutLabel.setText(String.valueOf(rs.getInt("total_out")));
 
-            // ✅ آخر معاملة مع تفاصيل كاملة (بما في ذلك الوحدة)
-            String lastTransSQL = """
+            stmt = conn.prepareStatement("""
                 SELECT TOP 1 
-                    st.TransactionType,
-                    st.Quantity,
-                    st.TransactionDate,
-                    st.ReceiverName,
-                    st.Notes,
-                    i.ItemName,
-                    u.UnitName,  -- ✅ إضافة الوحدة
+                    st.TransactionType, st.Quantity, st.TransactionDate,
+                    st.ReceiverName, st.Notes, i.ItemName, u.UnitName,
                     e.name AS EmployeeName
                 FROM StockTransactions st
                 LEFT JOIN Items i ON st.ItemID = i.ItemID
-                LEFT JOIN Units u ON i.UnitID = u.UnitID  -- ✅ JOIN مع جدول الوحدات
+                LEFT JOIN Units u ON i.UnitID = u.UnitID
                 LEFT JOIN Chemtech_management.dbo.Employees e ON st.EmployeeID = e.employee_id
                 ORDER BY st.TransactionDate DESC
-            """;
-            stmt = conn.prepareStatement(lastTransSQL);
+            """);
             rs = stmt.executeQuery();
-            if (rs.next()) {
-                String transactionType = rs.getString("TransactionType");
-                double quantity = rs.getDouble("Quantity");
-                String itemName = rs.getString("ItemName");
-                String unitName = rs.getString("UnitName");  // ✅ الوحدة
-                String receiverName = rs.getString("ReceiverName");
-                String notes = rs.getString("Notes");
-                String employeeName = rs.getString("EmployeeName");
-                String date = dateFormat.format(rs.getTimestamp("TransactionDate"));
 
-                // ✅ بناء نص واضح للعملية بالتنسيق الجديد مع الوحدة
-                String transactionText = buildTransactionText(
-                        transactionType, quantity, itemName, unitName, receiverName,
-                        notes, employeeName, date
+            lastTransactionContainer.getChildren().clear();
+
+            if (rs.next()) {
+                VBox card = buildTransactionCard(
+                        rs.getString("TransactionType"),
+                        rs.getDouble("Quantity"),
+                        rs.getString("ItemName"),
+                        rs.getString("UnitName"),
+                        rs.getString("ReceiverName"),
+                        rs.getString("Notes"),
+                        rs.getString("EmployeeName"),
+                        dateFormat.format(rs.getTimestamp("TransactionDate"))
                 );
-                lastTransactionLabel.setText(transactionText);
+                lastTransactionContainer.getChildren().add(card);
             } else {
-                lastTransactionLabel.setText("لا توجد معاملات بعد");
+                Label noData = new Label("لا توجد معاملات بعد");
+                noData.setStyle("-fx-text-fill: #475569; -fx-font-size: 14px; -fx-font-weight: bold;");
+                lastTransactionContainer.getChildren().add(noData);
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            dbStatusLabel.setText("❌ Error loading stats");
-            lastTransactionLabel.setText("خطأ في تحميل آخر معاملة");
+            showDisconnectedStatus("❌ فشل الاتصال بالسيرفر - سيتم إعادة المحاولة خلال 10 ثواني");
+            System.err.println("❌ خطأ أثناء تحميل الإحصائيات: " + e.getMessage());
+
+            Timeline retryTimeline = new Timeline(new KeyFrame(Duration.seconds(10), ev -> loadDashboardStats()));
+            retryTimeline.setCycleCount(1);
+            retryTimeline.play();
+
+        } finally {
+            if (conn != null) try { conn.close(); } catch (Exception ignored) {}
         }
     }
 
-    // ✅ دالة لبناء نص واضح ومنسّق للعملية مع الوحدة
-    private String buildTransactionText(String type, double quantity, String itemName,
-                                        String unitName, String receiver, String notes,
-                                        String employee, String date) {
-        StringBuilder text = new StringBuilder();
+    private VBox buildTransactionCard(String type, double quantity, String itemName,
+                                      String unitName, String receiver, String notes,
+                                      String employee, String date) {
 
-        // 🔹 نوع العملية
-        if ("IN".equals(type)) {
-            text.append("🟢 عملية إضافة\n");
-        } else {
-            text.append("🔴 عملية صرف\n");
-        }
+        VBox card = new VBox(8);
+        card.setPadding(new javafx.geometry.Insets(12));
+        card.setBackground(new Background(new BackgroundFill(
+                Color.web(type.equals("IN") ? "#ecfdf5" : "#fef2f2"),
+                new CornerRadii(12), javafx.geometry.Insets.EMPTY
+        )));
+        card.setBorder(new Border(new BorderStroke(
+                Color.web(type.equals("IN") ? "#10b981" : "#ef4444"),
+                BorderStrokeStyle.SOLID, new CornerRadii(12), new BorderWidths(1)
+        )));
 
-        text.append("━━━━━━━━━━━━━━━━━━━━━━\n");
+        Label title = new Label(type.equals("IN") ? "🟢 عملية إضافة" : "🔴 عملية صرف");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
 
-        // 📦 الصنف
-        text.append("الصنف: ").append(itemName != null ? itemName : "صنف محذوف").append("\n");
+        Label item = new Label("📦 الصنف: " + (itemName != null ? itemName : "صنف محذوف"));
+        Label qty = new Label("🔢 الكمية: " + quantity + " " + (unitName != null ? unitName : "وحدة"));
+        Label emp = new Label("👷‍♂️ الموظف: " + (employee != null ? employee : "غير معروف"));
 
-        // 🔢 الكمية والوحدة
-        String displayUnit = (unitName != null && !unitName.isEmpty()) ? unitName : "وحدة";
-        text.append("🔢 الكمية: ").append(quantity).append(" ").append(displayUnit).append("\n");
+        VBox infoBox = new VBox(5, item, qty, emp);
 
-        // 👷‍♂️ الموظف
-        text.append("👷‍♂️ الموظف: ").append(employee != null ? employee : "غير معروف").append("\n");
-
-        // 👤 المستلم (في حالة الصرف فقط)
         if ("OUT".equals(type) && receiver != null && !receiver.isEmpty() && !receiver.equals("System")) {
-            text.append("👤 المستلم: ").append(receiver).append("\n");
+            infoBox.getChildren().add(new Label("👤 المستلم: " + receiver));
         }
 
-        // 🕒 التاريخ والوقت
-        text.append("🕒 التاريخ: ").append(date).append("\n");
+        infoBox.getChildren().add(new Label("🕒 التاريخ: " + date));
 
-        // 📝 الملاحظات (إن وُجدت)
         if (notes != null && !notes.isEmpty()) {
-            text.append("📝 ملاحظات: ").append(notes).append("\n");
+            infoBox.getChildren().add(new Label("📝 ملاحظات: " + notes));
         }
 
-        text.append("━━━━━━━━━━━━━━━━━━━━━━");
+        card.getChildren().addAll(title, new javafx.scene.control.Separator(), infoBox);
+        return card;
+    }
 
-        return text.toString();
+    private void showDisconnectedStatus(String message) {
+        dbStatusLabel.setText(message);
+        dbStatusLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+        lastTransactionContainer.getChildren().setAll(new Label("🚫 تعذر تحميل آخر معاملة بسبب انقطاع الاتصال"));
+        totalItemsLabel.setText("--");
+        lowStockLabel.setText("--");
+        totalDevicesLabel.setText("--");
+        totalTransactionsLabel.setText("--");
+        totalInLabel.setText("--");
+        totalOutLabel.setText("--");
     }
 
     @FXML
     private void logout() {
         try {
-            // إغلاق الشاشة الحالية
             Stage currentStage = (Stage) loggedUserLabel.getScene().getWindow();
             currentStage.close();
 
-            // تحميل صفحة تسجيل الدخول
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/login.fxml"));
             Parent root = loader.load();
 
@@ -229,15 +221,15 @@ public class DashboardController {
         }
     }
 
-
+    @FXML private void openAddItemPage() { openPage("/views/AddItems.fxml", "إضافة صنف جديد"); }
+    @FXML private void openInventoryManagement() { openPage("/views/StockView.fxml", "إدارة المخزون"); }
+    @FXML private void openAddDevicePage() { openPage("/views/AddDevice.fxml", "تسجيل جهاز جديد"); }
+    @FXML private void openDevicesPage() { openPage("/views/DevicesManagement.fxml", "إدارة الأجهزة"); }
+    @FXML private void openSerialTracking() { openPage("/views/SerialTrackingView.fxml", "تتبع السيريالات"); }
+    @FXML private void onScrapMaintenanceClicked() { openPage("/views/ScrapMaintenanceView.fxml", "الأجهزة التالفة والصيانة"); }
     @FXML
-    private void openAddItemPage() {
-        openPage("/views/AddItems.fxml", "إضافة صنف جديد");
-    }
-
-    @FXML
-    private void openInventoryManagement() {
-        openPage("/views/StockView.fxml", "إدارة المخزون");
+    private void openPricingPage() {
+        openPage("/views/PricingView.fxml", "💰 إدارة تسعير الأصناف");
     }
 
 
@@ -246,49 +238,39 @@ public class DashboardController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/ReportsView.fxml"));
             Parent root = loader.load();
-
             Stage stage = new Stage();
             stage.setTitle("📊 التقارير والإحصائيات");
             stage.setScene(new Scene(root));
             stage.setMaximized(true);
             stage.show();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    @FXML
-    private void openAddDevicePage() {
-        openPage("/views/AddDevice.fxml", "تسجيل جهاز جديد");
-    }
-    @FXML
-    private void openDevicesPage() {
-        openPage("/views/DevicesManagement.fxml", "إدارة الأجهزة");
-    }
-    @FXML
-    private void openSerialTracking() {
-        openPage("/views/SerialTrackingView.fxml", "تتبع السيريالات");
-    }
-    @FXML
-    private void onScrapMaintenanceClicked() {
-        openPage("/views/ScrapMaintenanceView.fxml", "تتبع السيريالات");
-    }
 
-
-
-
-
-    @FXML
     private void openPage(String fxmlPath, String title) {
         try {
+            // تأكد إن FXML موجود في resources/views/
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
+
             Stage stage = new Stage();
             stage.setTitle(title);
             stage.setScene(new Scene(root));
+
+            // لتجنب مشاكل الحجم
+            stage.setResizable(true);
             stage.show();
+
         } catch (Exception e) {
+            // اطبع الـ stack trace الكامل لمعرفة السبب الحقيقي
+            e.printStackTrace();
             System.out.println("❌ خطأ أثناء فتح الصفحة: " + e.getMessage());
+            // رسالة Alert للمستخدم
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("خطأ في فتح الصفحة");
+            alert.setHeaderText("تعذر فتح الصفحة: " + title);
+            alert.setContentText("الرجاء التحقق من وجود الملف والمسار والمكتبات المطلوبة.\n\n" + e.getMessage());
+            alert.showAndWait();
         }
-    }
-}
+    }}

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.PricingController"
+            style="-fx-background-color: #f8fafc;">
+
+    <children>
+        <VBox spacing="15" alignment="TOP_CENTER" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="20">
+
+            <!-- العنوان -->
+            <Label text="💰 إدارة تسعير الأصناف"
+                   style="-fx-font-size:24; -fx-font-weight:bold; -fx-text-fill:#0f172a;"/>
+
+            <!-- شريط البحث والإدخال -->
+            <HBox spacing="10" alignment="CENTER">
+                <ComboBox fx:id="itemNameComboBox" editable="true" promptText="اسم الصنف" prefWidth="250"/>
+                <TextField fx:id="priceField" promptText="السعر" prefWidth="150"/>
+                <Button text="إضافة" onAction="#addPrice"
+                        style="-fx-background-color:#22c55e; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
+                <Button text="تعديل" onAction="#updatePrice"
+                        style="-fx-background-color:#3b82f6; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
+                <Button text="حذف" onAction="#deletePrice"
+                        style="-fx-background-color:#ef4444; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
+                <Button text="تحديث" onAction="#refreshTable"
+                        style="-fx-background-color:#f59e0b; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
+            </HBox>
+
+            <!-- مربع بحث للفلترة داخل الجدول -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="بحث:"/>
+                <TextField fx:id="tableSearchField" promptText="ابحث عن صنف..." prefWidth="300"/>
+            </HBox>
+
+            <!-- جدول الأسعار -->
+            <TableView fx:id="pricingTable" prefHeight="400" prefWidth="800">
+                <columns>
+                    <TableColumn fx:id="colItem" text="اسم الصنف" prefWidth="400"/>
+                    <TableColumn fx:id="colPrice" text="السعر" prefWidth="200"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </children>
+</AnchorPane>

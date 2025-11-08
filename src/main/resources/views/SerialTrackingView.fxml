@@ -24,9 +24,17 @@
         <Button text="عرض التتبع" onAction="#onShowSerial"/>
 
         <!-- الأزرار الجديدة -->
+        <Button fx:id="showExceededSerialsBtn" text="السيريالات المتجاوزة"
+                style="-fx-background-color: #ff6666; -fx-text-fill: white; -fx-font-weight: bold;"
+                onAction="#onShowExceededSerials"/>
+        <Button fx:id="showAllSerialsBtn" text="عرض كل السيريالات"
+                style="-fx-background-color: #ccccff; -fx-font-weight: bold;"
+                onAction="#onShowAllSerials"/>
         <Button fx:id="showExceededBtn" text="عرض المتجاوزات فقط" style="-fx-background-color: #ffcccc; -fx-font-weight: bold;"/>
         <Button fx:id="showAllBtn" text="عرض الكل" style="-fx-background-color: #ccffcc;"/>
         <Button fx:id="exportExcelBtn" text="تصدير Excel" style="-fx-background-color: #ccccff; -fx-font-weight: bold;"/>
+        <Button text="تسعير" fx:id="priceSerialBtn" onAction="#onPriceSerial"
+                style="-fx-background-color:#22c55e; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
     </HBox>
 
     <TableView fx:id="usageTable" prefHeight="420">

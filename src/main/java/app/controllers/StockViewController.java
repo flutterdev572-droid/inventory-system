@@ -354,7 +354,7 @@ public class StockViewController {
             newSerialField.setDisable(!isNewDevice);
 
             // ✅ تفعيل حقل المستلم في حالة الصيانة فقط
-            receiverField.setDisable(!isMaintenance);
+            receiverField.setDisable(!isMaintenance && !isNewDevice);
 
             // ✅ إعادة تعيين الحقول المعطلة
             if (!isNewDevice) {

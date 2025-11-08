@@ -5,6 +5,7 @@ import app.services.LogService;
 import app.utils.RawThermalPrinter;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -288,7 +289,33 @@ public class StockViewController {
 
         return dialog;
     }
+    // ✅ إنشاء Combobox مع خاصية البحث والأوتوكومبليت
+    private <T> void setupSearchableComboBox(ComboBox<T> comboBox, ObservableList<T> items) {
+        comboBox.setItems(items);
+        comboBox.setEditable(true);
 
+        TextField editor = comboBox.getEditor();
+        FilteredList<T> filteredItems = new FilteredList<>(items);
+
+        editor.textProperty().addListener((obs, oldValue, newValue) -> {
+            filteredItems.setPredicate(item -> {
+                if (newValue == null || newValue.isEmpty()) return true;
+                String filterText = newValue.toLowerCase();
+                return item.toString().toLowerCase().contains(filterText);
+            });
+
+            // تحديث القائمة المنسدلة
+            comboBox.setItems(filteredItems);
+            comboBox.show();
+        });
+
+        // إعادة تعيين القائمة عند فقدان التركيز
+        editor.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal) {
+                comboBox.setItems(items);
+            }
+        });
+    }
     // ✅ إنشاء دايلوج للصرف مع التحكم الديناميكي حسب نوع الاستخدام
     private Dialog<StockOutput> createStockOutDialog(String title, String content) {
         Dialog<StockOutput> dialog = new Dialog<>();

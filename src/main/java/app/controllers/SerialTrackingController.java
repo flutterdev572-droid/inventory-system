@@ -307,7 +307,7 @@ public class SerialTrackingController {
                         usedBy
                 ));
             }
-            debugExceededItems();
+//            debugExceededItems();
 
             if (rows.isEmpty()) {
                 showAlert("لا توجد بيانات استخدام لهذا السيريال.");
@@ -332,18 +332,22 @@ public class SerialTrackingController {
 
         int deviceId = selectedDevice.getId();
 
-        // استعلام مبسط بدون تعقيد
         String sql = """
-        SELECT DISTINCT DS.SerialNumber
+        SELECT DS.SerialNumber
         FROM DeviceSerials DS
-        WHERE DS.DeviceID = ?
-        AND DS.SerialID IN (
-            SELECT SCU.SerialID 
+        JOIN (
+            SELECT 
+                SCU.SerialID,
+                SUM(SCU.Quantity) AS UsedTotal,
+                SUM(ISNULL(DC.Quantity, 0)) AS ExpectedTotal
             FROM SerialComponentUsage SCU
-            JOIN Items I ON SCU.ItemID = I.ItemID
-            LEFT JOIN DeviceComponents DC ON DC.ItemID = I.ItemID AND DC.DeviceID = ?
-            WHERE SCU.Quantity > ISNULL(DC.Quantity, 0)
-        )
+            LEFT JOIN DeviceComponents DC 
+                ON DC.ItemID = SCU.ItemID 
+                AND DC.DeviceID = ?
+            GROUP BY SCU.SerialID
+        ) T ON T.SerialID = DS.SerialID
+        WHERE DS.DeviceID = ?
+        AND T.UsedTotal > T.ExpectedTotal
         ORDER BY DS.SerialNumber
     """;
 
@@ -362,10 +366,10 @@ public class SerialTrackingController {
 
             if (exceededSerials.isEmpty()) {
                 showAlert("لا توجد سيريالات متجاوزة لهذا الجهاز.");
-            } else {
-                // ✅ فتح نافذة منفصلة لعرض السيريالات المتجاوزة
-                openSerialsWindow("السيريالات المتجاوزة", exceededSerials, selectedDevice.getName());
+                return;
             }
+
+            openSerialsWindow("السيريالات المتجاوزة", exceededSerials, selectedDevice.getName());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -381,7 +385,7 @@ public class SerialTrackingController {
             AllSerialsController controller = loader.getController();
             controller.setParentController(this);
             controller.setDevice(new Device(0, deviceName)); // نستخدم ID=0 مؤقتاً
-            controller.setSerials(serials); // نعرض السيريالات المحددة فقط
+            controller.setSerials(serials);
 
             Stage stage = new Stage();
             stage.setTitle(title + " - " + deviceName);
@@ -435,8 +439,14 @@ public class SerialTrackingController {
 
     @FXML
     private void onShowAllSerials() {
-        onDeviceSelected(); // إعادة تحميل جميع السيريالات
-        showAlert("تم عرض جميع السيريالات");
+        Device selectedDevice = deviceCombo.getValue();
+        if (selectedDevice == null) {
+            showAlert("اختر جهاز أولاً");
+            return;
+        }
+
+        // استخدام الدالة الموجودة مسبقاً
+        openSerialsWindow("جميع السيريالات", masterSerials, selectedDevice.getName());
     }
 
     @FXML

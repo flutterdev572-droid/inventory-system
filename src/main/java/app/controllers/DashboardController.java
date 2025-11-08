@@ -59,6 +59,17 @@ public class DashboardController {
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
     }
+    private String formatNumber(int number) {
+        if (number >= 1_000_000) {
+            double millions = number / 1_000_000.0;
+            return String.format("%.1f مليون", millions);
+        } else if (number >= 1_000) {
+            double thousands = number / 1_000.0;
+            return String.format("%.1f ألف", thousands);
+        } else {
+            return String.valueOf(number);
+        }
+    }
 
     private void loadDashboardStats() {
         Connection conn = null;
@@ -66,7 +77,7 @@ public class DashboardController {
             conn = DatabaseConnection.getInventoryConnection();
 
             if (conn == null) {
-                showDisconnectedStatus("⚠️ لا يوجد اتصال بقاعدة البيانات");
+                showDisconnectedStatus("⚠ لا يوجد اتصال بقاعدة البيانات");
                 return;
             }
 
@@ -78,7 +89,7 @@ public class DashboardController {
 
             stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Items");
             rs = stmt.executeQuery();
-            if (rs.next()) totalItemsLabel.setText(String.valueOf(rs.getInt("total")));
+            if (rs.next()) totalItemsLabel.setText(formatNumber(rs.getInt("total")));
 
             stmt = conn.prepareStatement("""
                 SELECT COUNT(*) AS low_stock
@@ -87,23 +98,23 @@ public class DashboardController {
                 WHERE s.Quantity < i.MinQuantity
             """);
             rs = stmt.executeQuery();
-            if (rs.next()) lowStockLabel.setText(String.valueOf(rs.getInt("low_stock")));
+            if (rs.next()) lowStockLabel.setText(formatNumber(rs.getInt("low_stock")));
 
             stmt = conn.prepareStatement("SELECT COUNT(*) AS total_devices FROM Devices");
             rs = stmt.executeQuery();
-            if (rs.next()) totalDevicesLabel.setText(String.valueOf(rs.getInt("total_devices")));
+            if (rs.next()) totalDevicesLabel.setText(formatNumber(rs.getInt("total_devices")));
 
             stmt = conn.prepareStatement("SELECT COUNT(*) AS total_trans FROM StockTransactions");
             rs = stmt.executeQuery();
-            if (rs.next()) totalTransactionsLabel.setText(String.valueOf(rs.getInt("total_trans")));
+            if (rs.next()) totalTransactionsLabel.setText(formatNumber(rs.getInt("total_trans")));
 
             stmt = conn.prepareStatement("SELECT ISNULL(SUM(Quantity), 0) AS total_in FROM StockTransactions WHERE TransactionType = 'IN'");
             rs = stmt.executeQuery();
-            if (rs.next()) totalInLabel.setText(String.valueOf(rs.getInt("total_in")));
+            if (rs.next()) totalInLabel.setText(formatNumber(rs.getInt("total_in")));
 
             stmt = conn.prepareStatement("SELECT ISNULL(SUM(Quantity), 0) AS total_out FROM StockTransactions WHERE TransactionType = 'OUT'");
             rs = stmt.executeQuery();
-            if (rs.next()) totalOutLabel.setText(String.valueOf(rs.getInt("total_out")));
+            if (rs.next()) totalOutLabel.setText(formatNumber(rs.getInt("total_out")));
 
             stmt = conn.prepareStatement("""
                 SELECT TOP 1 
@@ -171,7 +182,7 @@ public class DashboardController {
 
         Label item = new Label("📦 الصنف: " + (itemName != null ? itemName : "صنف محذوف"));
         Label qty = new Label("🔢 الكمية: " + quantity + " " + (unitName != null ? unitName : "وحدة"));
-        Label emp = new Label("👷‍♂️ الموظف: " + (employee != null ? employee : "غير معروف"));
+        Label emp = new Label("👷‍♂ الموظف: " + (employee != null ? employee : "غير معروف"));
 
         VBox infoBox = new VBox(5, item, qty, emp);
 

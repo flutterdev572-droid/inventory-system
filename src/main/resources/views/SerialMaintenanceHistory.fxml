@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.controllers.SerialMaintenanceHistoryController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 15;">
+            <Label text="📋 تاريخ صيانة السيريالات" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <!-- فلترة بالتاريخ -->
+                <Label text="من:"/>
+                <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
+                <Label text="إلى:"/>
+                <DatePicker fx:id="toDatePicker" prefWidth="130"/>
+
+                <!-- بحث -->
+                <TextField fx:id="searchField" promptText="ابحث بالسيريال، العنصر، المستلم..." prefWidth="250"/>
+
+                <!-- أزرار -->
+                <Button text="بحث" onAction="#onSearchClicked" style="-fx-background-color: #1976D2; -fx-text-fill: white;"/>
+                <Button text="إعادة تعيين" onAction="#onResetClicked" style="-fx-background-color: #757575; -fx-text-fill: white;"/>
+                <Button text="تصدير Excel" onAction="#onExportClicked" style="-fx-background-color: #2E7D32; -fx-text-fill: white;"/>
+                <Button text="تحديث" onAction="#onRefreshClicked" style="-fx-background-color: #1565C0; -fx-text-fill: white;"/>
+            </HBox>
+
+            <!-- إحصائيات سريعة -->
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <Label fx:id="totalCostLabel" text="إجمالي التكلفة: 0.00 جنيه" style="-fx-text-fill: #D32F2F; -fx-font-weight: bold;"/>
+                <Label fx:id="totalItemsLabel" text="إجمالي العناصر: 0" style="-fx-text-fill: #1976D2; -fx-font-weight: bold;"/>
+                <Label fx:id="uniqueSerialsLabel" text="عدد السيريالات: 0" style="-fx-text-fill: #388E3C; -fx-font-weight: bold;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="dataTable" style="-fx-padding: 10;">
+            <columns>
+                <TableColumn fx:id="serialColumn" text="السيريال" prefWidth="150"/>
+                <TableColumn fx:id="deviceColumn" text="الجهاز" prefWidth="150"/>
+                <TableColumn fx:id="itemNameColumn" text="العنصر" prefWidth="200"/>
+                <TableColumn fx:id="quantityColumn" text="الكمية" prefWidth="80"/>
+                <TableColumn fx:id="unitPriceColumn" text="سعر الوحدة" prefWidth="100"/>
+                <TableColumn fx:id="totalPriceColumn" text="السعر الإجمالي" prefWidth="120"/>
+                <TableColumn fx:id="receiverColumn" text="المستلم" prefWidth="150"/>
+                <TableColumn fx:id="employeeColumn" text="المسؤول" prefWidth="150"/>
+                <TableColumn fx:id="dateColumn" text="التاريخ" prefWidth="150"/>
+                <TableColumn fx:id="notesColumn" text="ملاحظات" prefWidth="200"/>
+            </columns>
+        </TableView>
+    </center>
+</BorderPane>

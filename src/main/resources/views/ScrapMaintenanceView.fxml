@@ -15,6 +15,8 @@
                 <TextField fx:id="searchField" promptText="بحث..." prefWidth="250"/>
                 <Button text="تصدير Excel" onAction="#onExportClicked" style="-fx-background-color: #2E7D32; -fx-text-fill: white;"/>
                 <Button text="تحديث" onAction="#onRefreshClicked" style="-fx-background-color: #1565C0; -fx-text-fill: white;"/>
+                <!-- في شريط الأدوات، أضف هذا الزر -->
+                <Button text="📋 تاريخ صيانة السيريالات" onAction="#onSerialHistoryClicked" style="-fx-background-color: #7B1FA2; -fx-text-fill: white;"/>
             </HBox>
         </VBox>
     </top>

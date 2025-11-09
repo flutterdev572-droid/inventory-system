@@ -317,6 +317,7 @@ public class StockViewController {
         });
     }
     // ✅ إنشاء دايلوج للصرف مع التحكم الديناميكي حسب نوع الاستخدام
+// ✅ إنشاء دايلوج للصرف مع التحكم الديناميكي حسب نوع الاستخدام
     private Dialog<StockOutput> createStockOutDialog(String title, String content) {
         Dialog<StockOutput> dialog = new Dialog<>();
         dialog.setTitle(title);
@@ -339,6 +340,11 @@ public class StockViewController {
         ComboBox<String> usageType = new ComboBox<>();
         TextField receiverField = new TextField();
         receiverField.setPromptText("اسم المستلم");
+
+        // ✅ حقل جديد لاسم الجهاز/السيريال في الصيانة
+        TextField maintenanceDeviceField = new TextField();
+        maintenanceDeviceField.setPromptText("اسم الجهاز أو السيريال (للصيانة)");
+
         TextArea notesField = new TextArea();
         notesField.setPromptText("ملاحظات (اختياري)");
         notesField.setPrefRowCount(2);
@@ -383,6 +389,9 @@ public class StockViewController {
             // ✅ تفعيل حقل المستلم في حالة الصيانة فقط
             receiverField.setDisable(!isMaintenance && !isNewDevice);
 
+            // ✅ تفعيل حقل اسم الجهاز في الصيانة فقط
+            maintenanceDeviceField.setDisable(!isMaintenance);
+
             // ✅ إعادة تعيين الحقول المعطلة
             if (!isNewDevice) {
                 deviceCombo.setValue(null);
@@ -391,6 +400,7 @@ public class StockViewController {
             }
             if (!isMaintenance) {
                 receiverField.clear();
+                maintenanceDeviceField.clear();
             }
         });
 
@@ -413,8 +423,12 @@ public class StockViewController {
         grid.add(new Label("المستلم:"), 0, 5);
         grid.add(receiverField, 1, 5);
 
-        grid.add(new Label("ملاحظات:"), 0, 6);
-        grid.add(notesField, 1, 6);
+        // ✅ إضافة الحقل الجديد للصيانة
+        grid.add(new Label("الجهاز/السيريال (للصيانة):"), 0, 6);
+        grid.add(maintenanceDeviceField, 1, 6);
+
+        grid.add(new Label("ملاحظات:"), 0, 7);
+        grid.add(notesField, 1, 7);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -438,6 +452,12 @@ public class StockViewController {
                         return null;
                     }
 
+                    // ✅ التحقق من إدخال اسم الجهاز/السيريال في حالة الصيانة
+                    if ("صيانة".equals(usage) && (maintenanceDeviceField.getText() == null || maintenanceDeviceField.getText().trim().isEmpty())) {
+                        showError("❌ في حالة الصيانة يجب إدخال اسم الجهاز أو السيريال!");
+                        return null;
+                    }
+
                     return new StockOutput(
                             qty,
                             receiverField.getText(),
@@ -445,7 +465,8 @@ public class StockViewController {
                             deviceCombo.getValue(),
                             serialCombo.getValue(),
                             newSerialField.getText(),
-                            usageType.getValue()
+                            usageType.getValue(),
+                            maintenanceDeviceField.getText() // ✅ إضافة القيمة الجديدة
                     );
                 } catch (Exception e) {
                     showError("❌ رجاء إدخال البيانات صحيحة!");
@@ -457,8 +478,8 @@ public class StockViewController {
 
         return dialog;
     }
-
     // ✅ تحديث الكمية وتسجيل العملية مع تسجيل في جداول الصيانة والتوالف
+// ✅ تحديث الكمية وتسجيل العملية مع تسجيل في جداول الصيانة والتوالف
     private void updateStock(ItemData item, double qtyChange, String type, String notes) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -499,13 +520,14 @@ public class StockViewController {
                 // ✅ تسجيل في جدول الصيانة إذا كان النوع "صيانة"
                 if ("صيانة".equals(usageType)) {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO MaintenanceItems (ItemID, Quantity, ReceiverName, Notes, AddedBy) VALUES (?, ?, ?, ?, ?)"
+                            "INSERT INTO MaintenanceItems (ItemID, Quantity, ReceiverName, DeviceSerial, Notes, AddedBy) VALUES (?, ?, ?, ?, ?, ?)"
                     )) {
                         ps.setInt(1, item.getItemId());
                         ps.setDouble(2, Math.abs(qtyChange));
                         ps.setString(3, output.getReceiver());
-                        ps.setString(4, output.getNotes());
-                        ps.setInt(5, app.current_user.CurrentUser.getId());
+                        ps.setString(4, output.getMaintenanceDevice()); // ✅ حفظ اسم الجهاز/السيريال
+                        ps.setString(5, output.getNotes());
+                        ps.setInt(6, app.current_user.CurrentUser.getId());
                         ps.executeUpdate();
                     }
                 }
@@ -620,7 +642,6 @@ public class StockViewController {
             showError("خطأ في تحديث المخزون: " + e.getMessage());
         }
     }
-
     @FXML
     private void onExportClicked() {
         try {
@@ -742,6 +763,7 @@ public class StockViewController {
     }
 
     // ✅ كلاس لإدخال البيانات للصرف
+// ✅ كلاس لإدخال البيانات للصرف
     private static class StockOutput {
         private final double quantity;
         private final String receiver;
@@ -750,9 +772,11 @@ public class StockViewController {
         private final String serialNumber;
         private final String newSerial;
         private final String usageType;
+        private final String maintenanceDevice; // ✅ حقل جديد لاسم الجهاز في الصيانة
 
         public StockOutput(double quantity, String receiver, String notes,
-                           String deviceName, String serialNumber, String newSerial, String usageType) {
+                           String deviceName, String serialNumber, String newSerial,
+                           String usageType, String maintenanceDevice) {
             this.quantity = quantity;
             this.receiver = receiver;
             this.notes = notes;
@@ -760,6 +784,7 @@ public class StockViewController {
             this.serialNumber = serialNumber;
             this.newSerial = newSerial;
             this.usageType = usageType;
+            this.maintenanceDevice = maintenanceDevice;
         }
 
         public double getQuantity() { return quantity; }
@@ -769,5 +794,6 @@ public class StockViewController {
         public String getSerialNumber() { return serialNumber; }
         public String getNewSerial() { return newSerial; }
         public String getUsageType() { return usageType; }
+        public String getMaintenanceDevice() { return maintenanceDevice; } // ✅ دالة جديدة
     }
 }

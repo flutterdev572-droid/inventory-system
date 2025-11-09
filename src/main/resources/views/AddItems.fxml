@@ -17,8 +17,8 @@
                layoutX="340" layoutY="25"
                style="-fx-text-fill: #1e293b; -fx-font-size: 26px; -fx-font-weight: bold;"/>
 
-        <!-- صندوق الإدخال -->
-        <VBox spacing="15" layoutX="40" layoutY="80" prefWidth="350"
+        <!-- صندوق الإدخال الرئيسي -->
+        <VBox spacing="15" layoutX="40" layoutY="80" prefWidth="350" prefHeight="450"
               style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);">
             <padding>
                 <Insets top="20" right="20" bottom="20" left="20"/>
@@ -38,29 +38,26 @@
                 <TextField fx:id="initialQuantityField" promptText="الكمية المبدئية (اختياري)"
                            style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
 
+                <TextField fx:id="priceField" promptText="السعر (اختياري)"
+                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
                 <Button text="➕ إضافة الصنف"
                         onAction="#onAddItem"
-                        styleClass="success-button"
-                        prefHeight="40"/>
-            </children>
-        </VBox>
-        <!-- صندوق إضافة وحدة جديدة -->
-        <VBox spacing="10" layoutX="40" layoutY="350" prefWidth="350"
-              style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 1);">
-            <padding>
-                <Insets top="15" right="20" bottom="15" left="20"/>
-            </padding>
-            <children>
-                <Label text="إضافة وحدة جديدة" style="-fx-text-fill: #1e293b; -fx-font-size: 16px; -fx-font-weight: bold;"/>
-                <HBox spacing="10">
-                    <TextField fx:id="newUnitField" promptText="اكتب اسم الوحدة"
-                               style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS"/>
-                    <Button text="➕" onAction="#onAddUnit"
-                            style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
-                </HBox>
-            </children>
-        </VBox>
+                        prefHeight="40"
+                        style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
 
+                <!-- إضافة وحدة جديدة داخل نفس الـ VBox -->
+                <VBox spacing="10" style="-fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-padding: 10;">
+                    <Label text="إضافة وحدة جديدة" style="-fx-text-fill: #1e293b; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <HBox spacing="10">
+                        <TextField fx:id="newUnitField" promptText="اكتب اسم الوحدة"
+                                   style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS"/>
+                        <Button text="➕ إضافة" onAction="#onAddUnit"
+                                style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
+                    </HBox>
+                </VBox>
+            </children>
+        </VBox>
 
         <!-- البحث -->
         <TextField fx:id="searchField"

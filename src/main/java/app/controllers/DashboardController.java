@@ -1,6 +1,7 @@
 package app.controllers;
 
 import app.db.DatabaseConnection;
+import app.models.PermissionManager;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -29,7 +30,7 @@ public class DashboardController {
     @FXML private Label totalOutLabel;
     @FXML private Label loggedUserLabel;
     @FXML private Label totalDevicesLabel;
-    @FXML private VBox lastTransactionContainer; // ✅ بدلاً من label واحد
+    @FXML private VBox lastTransactionContainer;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -38,6 +39,7 @@ public class DashboardController {
             loggedUserLabel.setText("مرحباً: " + name);
         }
     }
+
 
     @FXML
     public void initialize() {
@@ -222,6 +224,7 @@ public class DashboardController {
             Parent root = loader.load();
 
             Stage loginStage = new Stage();
+            currentStage.setMaximized(true);
             loginStage.setTitle("تسجيل الدخول");
             loginStage.setScene(new Scene(root));
             loginStage.show();
@@ -231,7 +234,21 @@ public class DashboardController {
             System.out.println("❌ خطأ أثناء تسجيل الخروج: " + e.getMessage());
         }
     }
+    private int currentEmployeeId;
+    private PermissionManager.UserPermissions userPermissions;
 
+    public void setLoggedEmployee(int employeeId, String name) {
+        this.currentEmployeeId = employeeId;
+        setLoggedEmployeeName(name);
+        loadUserPermissions();
+        applyPermissions();
+    }
+    private void loadUserPermissions() {
+        this.userPermissions = PermissionManager.getUserPermissions(currentEmployeeId);
+    }
+    private void applyPermissions() {
+        if (userPermissions == null) return;
+    }
     @FXML private void openAddItemPage() { openPage("/views/AddItems.fxml", "إضافة صنف جديد"); }
     @FXML private void openInventoryManagement() { openPage("/views/StockView.fxml", "إدارة المخزون"); }
     @FXML private void openAddDevicePage() { openPage("/views/AddDevice.fxml", "تسجيل جهاز جديد"); }
@@ -241,6 +258,18 @@ public class DashboardController {
     @FXML
     private void openPricingPage() {
         openPage("/views/PricingView.fxml", "💰 إدارة تسعير الأصناف");
+    }
+
+    @FXML
+    private void openControlPanel() {
+        if (userPermissions != null && userPermissions.canAccessControlPanel) {
+            openPage("/views/ControlPanelView.fxml", "🎛️ لوحة التحكم");
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("صلاحية مرفوضة");
+            alert.setHeaderText("ليس لديك صلاحية للوصول إلى لوحة التحكم");
+            alert.showAndWait();
+        }
     }
 
 

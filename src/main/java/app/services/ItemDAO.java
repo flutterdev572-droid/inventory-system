@@ -15,36 +15,39 @@ public class ItemDAO {
     // ===================================
     // 1️⃣ إضافة صنف جديد
     // ===================================
-    public boolean addItem(String name, String unitName, double minQty, double initialQty) throws SQLException {
+    public int addItem(String name, String unitName, double minQty, double initialQty) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
             int unitId = getUnitIdByName(unitName, conn);
-            if (unitId == -1) return false;
+            if (unitId == -1) return -1;
 
-            PreparedStatement check = conn.prepareStatement("SELECT COUNT(*) FROM Items WHERE ItemName=?");
+            PreparedStatement check = conn.prepareStatement("SELECT ItemID FROM Items WHERE ItemName=?");
             check.setString(1, name);
             ResultSet rs = check.executeQuery();
-            rs.next();
-            if (rs.getInt(1) > 0) return false;
+            if (rs.next()) return -1; // موجود بالفعل
 
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO Items (ItemName, UnitID, MinQuantity) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+                    "INSERT INTO Items (ItemName, UnitID, MinQuantity) VALUES (?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, name);
             ps.setInt(2, unitId);
             ps.setDouble(3, minQty);
             ps.executeUpdate();
 
-            ResultSet keys = ps.getGeneratedKeys();
-            if (keys.next()) {
-                int itemId = keys.getInt(1);
+            rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                int itemId = rs.getInt(1);
+
+                // إضافة الكمية المبدئية
                 PreparedStatement bal = conn.prepareStatement(
                         "INSERT INTO StockBalances (ItemID, Quantity) VALUES (?, ?)");
                 bal.setInt(1, itemId);
                 bal.setDouble(2, initialQty);
                 bal.executeUpdate();
-            }
 
-            return true;
+                return itemId;
+            }
         }
+        return -1;
     }
 
     // ===================================
@@ -315,5 +318,21 @@ public class ItemDAO {
             return false;
         }
     }
+
+
+    //==========================
+    //Add Price
+    //===========================
+    public void addItemPrice(int itemId, double price) throws SQLException {
+        String query = "INSERT INTO ItemPrices (ItemID, UnitPrice, CreatedBy) VALUES (?, ?, NULL)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             var stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, itemId);
+            stmt.setDouble(2, price);
+            stmt.executeUpdate();
+        }
+    }
+
+
 
 }

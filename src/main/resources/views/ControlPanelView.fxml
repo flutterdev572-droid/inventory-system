@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.ControlPanelController"
+            style="-fx-background-color: #f8fafc;">
+
+    <VBox spacing="20" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="20">
+
+        <!-- Header -->
+        <HBox spacing="15" alignment="CENTER_LEFT"
+              style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
+            <Label text="🎛️ لوحة التحكم في الصلاحيات"
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+        </HBox>
+
+        <!-- Employee Search Section -->
+        <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
+            <Label text="🔍 البحث عن موظف" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="employeeIdField" promptText="أدخل رقم الموظف"
+                           style="-fx-pref-width: 200;"/>
+                <Button text="بحث" onAction="#searchEmployee"
+                        style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;"/>
+            </HBox>
+
+            <Label fx:id="employeeNameLabel" text="اسم الموظف: -"
+                   style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+        </VBox>
+
+        <!-- Permissions Control -->
+        <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
+            <Label text="🔐 إدارة الصلاحيات" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+            <GridPane hgap="15" vgap="10">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+
+                <!-- Column 1 -->
+                <CheckBox fx:id="canAddItemsCheck" text="➕ إضافة أصناف جديدة" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <CheckBox fx:id="canManageInventoryCheck" text="📦 إدارة المخزون" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <CheckBox fx:id="canAddDevicesCheck" text="🧰 تسجيل أجهزة جديدة" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <CheckBox fx:id="canManageDevicesCheck" text="🧾 إدارة الأجهزة" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+
+                <!-- Column 2 -->
+                <CheckBox fx:id="canTrackSerialsCheck" text="📦 تتبع السيريال" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <CheckBox fx:id="canViewReportsCheck" text="📊 التقارير" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <CheckBox fx:id="canScrapMaintenanceCheck" text="🛠️ صيانة وتوالف" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <CheckBox fx:id="canManagePricingCheck" text="💰 التسعير" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <CheckBox fx:id="canAccessControlPanelCheck" text="🎛️ لوحة التحكم" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+            </GridPane>
+
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button text="حفظ الصلاحيات" onAction="#savePermissions"
+                        style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                <Button text="إعادة تعيين" onAction="#resetPermissions"
+                        style="-fx-background-color: #6b7280; -fx-text-fill: white; -fx-font-weight: bold;"/>
+            </HBox>
+        </VBox>
+
+        <!-- Active Users Section -->
+        <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;">
+            <Label text="👥 المستخدمون النشطون حالياً" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+            <TableView fx:id="activeUsersTable" prefHeight="200">
+                <columns>
+                    <TableColumn text="رقم الموظف" prefWidth="100"/>
+                    <TableColumn text="اسم الموظف" prefWidth="150"/>
+                    <TableColumn text="آخر نشاط" prefWidth="150"/>
+                    <TableColumn text="الإجراءات" prefWidth="100"/>
+                </columns>
+            </TableView>
+        </VBox>
+
+    </VBox>
+</AnchorPane>

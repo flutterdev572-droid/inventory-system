@@ -6,9 +6,14 @@ import app.services.LogService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -80,7 +85,23 @@ public class ScrapMaintenanceController {
             showError("خطأ في تحميل البيانات: " + e.getMessage());
         }
     }
+    @FXML
+    private void onSerialHistoryClicked() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/SerialMaintenanceHistory.fxml"));
+            Parent root = loader.load();
 
+            Stage stage = new Stage();
+            stage.setTitle("تاريخ صيانة السيريالات");
+            stage.setScene(new Scene(root, 1200, 700));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("خطأ في فتح نافذة تاريخ الصيانة: " + e.getMessage());
+        }
+    }
     private void loadScrapData(Connection conn) throws SQLException {
         String scrapQuery = """
         SELECT 
@@ -221,12 +242,11 @@ public class ScrapMaintenanceController {
         createHeaderRow(header, columns, workbook);
 
         String query = """
-            SELECT i.ItemName, s.Quantity, e.EmployeeName, s.DateAdded, s.Notes
-            FROM ScrapItems s
-            INNER JOIN Items i ON s.ItemID = i.ItemID
-            INNER JOIN Employees e ON s.AddedBy = e.EmployeeID
-            ORDER BY s.DateAdded DESC
-        """;
+        SELECT i.ItemName, s.Quantity, s.DateAdded, s.Notes
+        FROM ScrapItems s
+        INNER JOIN Items i ON s.ItemID = i.ItemID
+        ORDER BY s.DateAdded DESC
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
@@ -237,7 +257,7 @@ public class ScrapMaintenanceController {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(rs.getString("ItemName"));
                 row.createCell(1).setCellValue(rs.getDouble("Quantity"));
-                row.createCell(2).setCellValue(rs.getString("EmployeeName"));
+                row.createCell(2).setCellValue(CurrentUser.getName()); // ← هنا
                 row.createCell(3).setCellValue(rs.getTimestamp("DateAdded").toString());
                 row.createCell(4).setCellValue(rs.getString("Notes") != null ? rs.getString("Notes") : "");
             }
@@ -256,12 +276,11 @@ public class ScrapMaintenanceController {
         createHeaderRow(header, columns, workbook);
 
         String query = """
-            SELECT i.ItemName, m.Quantity, m.ReceiverName, e.EmployeeName, m.DateAdded, m.Notes
-            FROM MaintenanceItems m
-            INNER JOIN Items i ON m.ItemID = i.ItemID
-            INNER JOIN Employees e ON m.AddedBy = e.EmployeeID
-            ORDER BY m.DateAdded DESC
-        """;
+        SELECT i.ItemName, m.Quantity, m.ReceiverName, m.DateAdded, m.Notes
+        FROM MaintenanceItems m
+        INNER JOIN Items i ON m.ItemID = i.ItemID
+        ORDER BY m.DateAdded DESC
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
@@ -273,7 +292,7 @@ public class ScrapMaintenanceController {
                 row.createCell(0).setCellValue(rs.getString("ItemName"));
                 row.createCell(1).setCellValue(rs.getDouble("Quantity"));
                 row.createCell(2).setCellValue(rs.getString("ReceiverName"));
-                row.createCell(3).setCellValue(rs.getString("EmployeeName"));
+                row.createCell(3).setCellValue(CurrentUser.getName()); // ← هنا
                 row.createCell(4).setCellValue(rs.getTimestamp("DateAdded").toString());
                 row.createCell(5).setCellValue(rs.getString("Notes") != null ? rs.getString("Notes") : "");
             }
@@ -283,6 +302,7 @@ public class ScrapMaintenanceController {
             sheet.autoSizeColumn(i);
         }
     }
+
 
     private void createHeaderRow(Row header, String[] columns, Workbook workbook) {
         for (int i = 0; i < columns.length; i++) {

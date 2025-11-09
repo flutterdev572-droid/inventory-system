@@ -30,6 +30,7 @@ public class AddItemsController {
     @FXML private TableColumn<Item, Void> colActions;
     @FXML private Label statusLabel;
     @FXML private TextField newUnitField;
+    @FXML private TextField priceField;
 
     private ItemDAO itemDAO;
 
@@ -94,19 +95,27 @@ public class AddItemsController {
             double minQty = Double.parseDouble(minQuantityField.getText());
             double initialQty = initialQuantityField.getText().isEmpty() ?
                     0 : Double.parseDouble(initialQuantityField.getText());
+            Double price = priceField.getText().isEmpty() ?
+                    null : Double.parseDouble(priceField.getText()); // ← السعر اختياري
 
             if (name.isEmpty() || unit == null) {
                 statusLabel.setText("⚠️ يرجى إدخال اسم ووحدة الصنف.");
                 return;
             }
 
-            boolean added = itemDAO.addItem(name, unit, minQty, initialQty);
-            if (added) {
+            int itemId = itemDAO.addItem(name, unit, minQty, initialQty);
+            if (itemId > 0) {
+                // لو فيه سعر، نحفظه في جدول ItemPrices
+                if (price != null) {
+                    itemDAO.addItemPrice(itemId, price);
+                }
+
                 statusLabel.setText("✅ تم إضافة الصنف بنجاح!");
 
-                // تسجيل العملية في اللوج
-                String description = String.format("تم إضافة صنف جديد: %s - الوحدة: %s - الكمية الدنيا: %.2f - الكمية الأولية: %.2f",
-                        name, unit, minQty, initialQty);
+                String description = String.format(
+                        "تم إضافة صنف جديد: %s - الوحدة: %s - الكمية الدنيا: %.2f - الكمية الأولية: %.2f - السعر: %s",
+                        name, unit, minQty, initialQty, price == null ? "بدون سعر" : String.format("%.2f", price)
+                );
                 LogService.addLog("ADD_ITEM", description);
 
                 refreshTable();
@@ -119,6 +128,7 @@ public class AddItemsController {
             statusLabel.setText("❌ خطأ: " + e.getMessage());
         }
     }
+
 
     private void addDeleteButtonToTable() {
         Callback<TableColumn<Item, Void>, TableCell<Item, Void>> cellFactory = param -> new TableCell<>() {

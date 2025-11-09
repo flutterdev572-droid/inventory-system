@@ -21,6 +21,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -89,7 +90,28 @@ public class SerialTrackingController {
 
         usageTable.setItems(filteredUsageList);
         serialCombo.setEditable(true);
-        serialCombo.getEditor().addEventFilter(KeyEvent.KEY_RELEASED, this::onSerialFilterKey);
+
+        // ✅ الحل الشامل للعربية والإنجليزية
+        serialCombo.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!serialCombo.isShowing()) {
+                filterSerials(newValue);
+            }
+        });
+
+        // ✅ إضافة event filter للتحكم في السلوك
+        serialCombo.getEditor().addEventFilter(KeyEvent.KEY_TYPED, event -> {
+            // السماح بالكتابة العادية دون تدخل
+        });
+
+        serialCombo.setOnShown(event -> {
+            Platform.runLater(() -> {
+                String currentText = serialCombo.getEditor().getText();
+                if (!currentText.isEmpty()) {
+                    serialCombo.getEditor().positionCaret(currentText.length());
+                }
+            });
+        });
+
         deviceCombo.setOnAction(e -> onDeviceSelected());
         refreshSerialsBtn.setOnAction(e -> onDeviceSelected());
         showExceededBtn.setOnAction(e -> onShowExceeded());
@@ -98,11 +120,6 @@ public class SerialTrackingController {
         showExceededSerialsBtn.setOnAction(e -> onShowExceededSerials());
         showAllSerialsBtn.setOnAction(e -> onShowAllSerials());
         loadDevices();
-    }
-
-    private void onSerialFilterKey(KeyEvent event) {
-        String text = serialCombo.getEditor().getText();
-        filterSerials(text);
     }
 
     private void filterSerials(String filter) {
@@ -116,9 +133,38 @@ public class SerialTrackingController {
             if (s.toLowerCase().contains(f)) filtered.add(s);
         }
         serialCombo.setItems(filtered);
-        serialCombo.getEditor().setText(filter);
-        serialCombo.show();
+
+        // ✅ الحل الأمثل للكيرسر
+        if (!serialCombo.isShowing()) {
+            serialCombo.show();
+        }
+
+        // ✅ الحفاظ على النص والمؤشر
+        Platform.runLater(() -> {
+            int caretPosition = serialCombo.getEditor().getCaretPosition();
+            serialCombo.getEditor().setText(filter);
+            serialCombo.getEditor().positionCaret(caretPosition);
+        });
     }
+    private void onSerialFilterKey(KeyEvent event) {
+        String text = serialCombo.getEditor().getText();
+        filterSerials(text);
+    }
+
+//    private void filterSerials(String filter) {
+//        if (filter == null || filter.isBlank()) {
+//            serialCombo.setItems(masterSerials);
+//            return;
+//        }
+//        final String f = filter.toLowerCase();
+//        ObservableList<String> filtered = FXCollections.observableArrayList();
+//        for (String s : masterSerials) {
+//            if (s.toLowerCase().contains(f)) filtered.add(s);
+//        }
+//        serialCombo.setItems(filtered);
+//        serialCombo.getEditor().setText(filter);
+//        serialCombo.show();
+//    }
 
     // تحميل الأجهزة بدون إظهار ID
     private void loadDevices() {
@@ -708,15 +754,9 @@ public class SerialTrackingController {
         final double finalExceededTotal = exceededTotal;
         exportExcelBtn.setOnAction(e -> exportPriceDetailsToExcel(deviceName, serial, details, total, finalExceededTotal, expectedQuantities));
 
-        Button exportImageBtn = new Button("تصدير صورة");
-        exportImageBtn.setStyle("-fx-background-color:#f59e0b; -fx-text-fill:white; -fx-font-weight:bold;");
-        exportImageBtn.setOnAction(e -> {
-            VBox snapshotContainer = new VBox(10);
-            snapshotContainer.getChildren().addAll(logo, company, deviceLabel, table, sep, totalLabel, exceededLabel, buttons);
-            exportPriceDialogAsImage(snapshotContainer, deviceName, serial, details, total, finalExceededTotal);
-        });
 
-        buttons.getChildren().addAll(exportExcelBtn, exportImageBtn);
+
+        buttons.getChildren().addAll(exportExcelBtn);
 
         container.getChildren().addAll(logo, company, deviceLabel, table, sep, totalLabel, exceededLabel, buttons);
 
@@ -726,65 +766,111 @@ public class SerialTrackingController {
     }
 
     // ✅ تصدير Excel (معدل)
-    private void exportPriceDetailsToExcel(String deviceName, String serial, List<PriceDetail> details, double total, double exceededTotal, Map<String, Double> expectedQuantities) {
+    private void exportPriceDetailsToExcel(String deviceName, String serial, List<PriceDetail> details,
+                                           double total, double exceededTotal, Map<String, Double> expectedQuantities) {
         FileChooser fc = new FileChooser();
         fc.setTitle("حفظ تقرير التسعير");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
-        fc.setInitialFileName("تسعير_"+serial+".xlsx");
+        fc.setInitialFileName("تسعير_" + serial + ".xlsx");
         File file = fc.showSaveDialog(priceSerialBtn.getScene().getWindow());
-        if(file==null) return;
+        if (file == null) return;
 
-        try(Workbook wb = new XSSFWorkbook()) {
+        try (Workbook wb = new XSSFWorkbook()) {
             Sheet sheet = wb.createSheet("تقرير التسعير");
 
-            // تنسيق للأرقام
-            CellStyle moneyStyle = wb.createCellStyle();
-            DataFormat format = wb.createDataFormat();
-            moneyStyle.setDataFormat(format.getFormat("#,##0.00"));
+            // إعدادات الأعمدة
+            sheet.setColumnWidth(0, 7000);
+            sheet.setColumnWidth(1, 4000);
+            sheet.setColumnWidth(2, 4000);
+            sheet.setColumnWidth(3, 4000);
+            sheet.setColumnWidth(4, 4000);
 
-            // تنسيق للخلايا الحمراء (المتجاوزة)
+            // 📘 تنسيقات عامة
+            CellStyle titleStyle = wb.createCellStyle();
+            Font titleFont = wb.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 16);
+            titleStyle.setFont(titleFont);
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            CellStyle subtitleStyle = wb.createCellStyle();
+            Font subtitleFont = wb.createFont();
+            subtitleFont.setFontHeightInPoints((short) 12);
+            subtitleStyle.setFont(subtitleFont);
+            subtitleStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            CellStyle headerStyle = wb.createCellStyle();
+            Font headerFont = wb.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+
+            // 💰 تنسيقات الأرقام
+            DataFormat format = wb.createDataFormat();
+
+            CellStyle moneyStyle = wb.createCellStyle();
+            moneyStyle.setDataFormat(format.getFormat("#,##0.00"));
+            moneyStyle.setAlignment(HorizontalAlignment.CENTER);
+
             CellStyle exceededStyle = wb.createCellStyle();
             exceededStyle.setDataFormat(format.getFormat("#,##0.00"));
             exceededStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
             exceededStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            exceededStyle.setAlignment(HorizontalAlignment.CENTER);
 
-            // شعار + الجهاز + السيريال
+            // 🧾 العنوان الرئيسي
             Row row0 = sheet.createRow(0);
-            row0.createCell(0).setCellValue("CHEM TECH");
+            Cell titleCell = row0.createCell(0);
+            titleCell.setCellValue("CHEM TECH - تقرير التسعير");
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
 
+            // 🏷️ اسم الجهاز والسيريال
             Row row1 = sheet.createRow(1);
-            row1.createCell(0).setCellValue("الجهاز: "+deviceName+" | السيريال: "+serial);
+            Cell deviceInfoCell = row1.createCell(0);
+            deviceInfoCell.setCellValue("اسم الجهاز: " + deviceName + "    |    السيريال: " + serial);
+            deviceInfoCell.setCellStyle(subtitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 4));
 
+            // 📋 رأس الجدول
             Row header = sheet.createRow(3);
             String[] headers = {"المكون", "المتوقع", "الكمية المستخدمة", "سعر الوحدة", "الإجمالي"};
-            for(int i=0;i<headers.length;i++) header.createCell(i).setCellValue(headers[i]);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
 
+            // 📊 البيانات
             int r = 4;
-            for(PriceDetail pd: details){
+            for (PriceDetail pd : details) {
                 Row row = sheet.createRow(r++);
                 double expected = expectedQuantities.getOrDefault(pd.itemName, 0.0);
                 boolean isExceeded = pd.qty > expected;
 
                 row.createCell(0).setCellValue(pd.itemName);
 
-                // المتوقع
                 Cell expectedCell = row.createCell(1);
                 expectedCell.setCellValue(expected);
                 expectedCell.setCellStyle(moneyStyle);
 
-                // الكمية المستخدمة
                 Cell qtyCell = row.createCell(2);
                 qtyCell.setCellValue(pd.qty);
 
-                // سعر الوحدة
                 Cell priceCell = row.createCell(3);
                 priceCell.setCellValue(pd.price);
 
-                // الإجمالي
                 Cell subtotalCell = row.createCell(4);
                 subtotalCell.setCellValue(pd.subtotal);
 
-                // ✅ تلوين الخلايا المتجاوزة
                 if (isExceeded) {
                     qtyCell.setCellStyle(exceededStyle);
                     subtotalCell.setCellStyle(exceededStyle);
@@ -795,46 +881,34 @@ public class SerialTrackingController {
                 }
             }
 
-            // ✅ إجمالي المتجاوز
+            // 🧮 الإجماليات
+            r++;
             Row exceededRow = sheet.createRow(r++);
-            exceededRow.createCell(3).setCellValue("إجمالي التجاوز");
+            exceededRow.createCell(3).setCellValue("إجمالي التجاوز:");
             Cell exceededCell = exceededRow.createCell(4);
             exceededCell.setCellValue(exceededTotal);
             exceededCell.setCellStyle(exceededStyle);
 
-            // المجموع النهائي
-            Row totalRow = sheet.createRow(r);
-            totalRow.createCell(3).setCellValue("المجموع النهائي");
-            totalRow.createCell(4).setCellValue(total);
-            totalRow.getCell(4).setCellStyle(moneyStyle);
+            Row totalRow = sheet.createRow(r++);
+            totalRow.createCell(3).setCellValue("المجموع النهائي:");
+            Cell totalCell = totalRow.createCell(4);
+            totalCell.setCellValue(total);
+            totalCell.setCellStyle(moneyStyle);
 
-            try(FileOutputStream fos = new FileOutputStream(file)) { wb.write(fos); }
-            showAlert("تم حفظ التقرير بنجاح: "+file.getAbsolutePath());
+            // ✅ حفظ الملف
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                wb.write(fos);
+            }
 
-        }catch(Exception e){
+            showAlert("تم حفظ التقرير بنجاح في:\n" + file.getAbsolutePath());
+
+        } catch (Exception e) {
             e.printStackTrace();
-            showAlert("حدث خطأ أثناء التصدير: "+e.getMessage());
+            showAlert("حدث خطأ أثناء التصدير: " + e.getMessage());
         }
     }
 
     // ✅ تصدير الصورة (معدل)
-    private void exportPriceDialogAsImage(VBox container, String deviceName, String serial, List<PriceDetail> details, double total, double exceededTotal){
-        FileChooser fc = new FileChooser();
-        fc.setTitle("حفظ تقرير التسعير كصورة");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG", "*.png"));
-        fc.setInitialFileName("تسعير_" + serial + ".png");
-        File file = fc.showSaveDialog(priceSerialBtn.getScene().getWindow());
-        if(file == null) return;
-
-        try {
-            WritableImage image = container.snapshot(new SnapshotParameters(), null);
-            ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
-            showAlert("تم حفظ الصورة بنجاح: " + file.getAbsolutePath());
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("حدث خطأ أثناء حفظ الصورة: " + e.getMessage());
-        }
-    }
     // ✅ دالة لجلب الكميات المتوقعة للجهاز
     private Map<String, Double> getExpectedQuantitiesForDevice(int deviceId) {
         Map<String, Double> expectedMap = new HashMap<>();

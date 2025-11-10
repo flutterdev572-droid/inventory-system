@@ -3,6 +3,7 @@ package app.controllers;
 import app.db.DatabaseConnection;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -31,19 +32,12 @@ public class DashboardController {
     @FXML private Label loggedUserLabel;
     @FXML private Label totalDevicesLabel;
     @FXML private VBox lastTransactionContainer;
-    @FXML
-    private VBox sidebarDrawer;
+    @FXML private VBox sidebarDrawer;
+    @FXML private VBox mainContentArea;
 
-    @FXML
-    private void toggleSidebar() {
-        if (sidebarDrawer.isVisible()) {
-            sidebarDrawer.setVisible(false);
-            sidebarDrawer.setManaged(false);
-        } else {
-            sidebarDrawer.setVisible(true);
-            sidebarDrawer.setManaged(true);
-        }
-    }
+    private boolean isSidebarOpen = true;
+    private TranslateTransition sidebarTransition;
+    private TranslateTransition contentTransition;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -55,6 +49,10 @@ public class DashboardController {
 
     @FXML
     public void initialize() {
+        // تهيئة الـ animations
+        setupAnimations();
+
+        // الكود الأصلي للاتصال بقاعدة البيانات
         String status = DatabaseConnection.testConnection();
         dbStatusLabel.setText(status);
         if (status.contains("نجاح")) {
@@ -73,6 +71,36 @@ public class DashboardController {
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
     }
+
+    private void setupAnimations() {
+        // animation للسايدبار
+        sidebarTransition = new TranslateTransition(Duration.millis(300), sidebarDrawer);
+
+        // animation للمحتوى الرئيسي
+        contentTransition = new TranslateTransition(Duration.millis(300), mainContentArea);
+    }
+
+    @FXML
+    private void toggleSidebar() {
+        if (isSidebarOpen) {
+            // إغلاق السايدبار - يتحرك لليسار خارج الشاشة
+            sidebarTransition.setToX(-280);
+            // تعديل الـ anchors للمحتوى الرئيسي ليشمل المساحة كاملة
+            AnchorPane.setLeftAnchor(mainContentArea, 25.0);
+        } else {
+            // فتح السايدبار - يعود لوضعه الطبيعي
+            sidebarTransition.setToX(0);
+            // إعادة الـ anchors للمحتوى الرئيسي لوضعه الأصلي
+            AnchorPane.setLeftAnchor(mainContentArea, 295.0);
+        }
+
+        // تشغيل الـ animations
+        sidebarTransition.play();
+        contentTransition.play();
+
+        isSidebarOpen = !isSidebarOpen;
+    }
+
     private String formatNumber(int number) {
         if (number >= 1_000_000) {
             double millions = number / 1_000_000.0;
@@ -267,7 +295,6 @@ public class DashboardController {
         stage.show();
     }
 
-
     @FXML
     private void openReports() {
         try {
@@ -285,27 +312,23 @@ public class DashboardController {
 
     private void openPage(String fxmlPath, String title) {
         try {
-            // تأكد إن FXML موجود في resources/views/
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
 
             Stage stage = new Stage();
             stage.setTitle(title);
             stage.setScene(new Scene(root));
-
-            // لتجنب مشاكل الحجم
             stage.setResizable(true);
             stage.show();
 
         } catch (Exception e) {
-            // اطبع الـ stack trace الكامل لمعرفة السبب الحقيقي
             e.printStackTrace();
             System.out.println("❌ خطأ أثناء فتح الصفحة: " + e.getMessage());
-            // رسالة Alert للمستخدم
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("خطأ في فتح الصفحة");
             alert.setHeaderText("تعذر فتح الصفحة: " + title);
             alert.setContentText("الرجاء التحقق من وجود الملف والمسار والمكتبات المطلوبة.\n\n" + e.getMessage());
             alert.showAndWait();
         }
-    }}
+    }
+}

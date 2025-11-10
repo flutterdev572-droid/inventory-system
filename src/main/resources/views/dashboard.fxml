@@ -124,7 +124,7 @@
         </VBox>
 
         <!-- ✅ MAIN CONTENT AREA -->
-        <VBox spacing="25" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="295" AnchorPane.rightAnchor="25"
+        <VBox fx:id="mainContentArea" spacing="25" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="295" AnchorPane.rightAnchor="25"
               AnchorPane.bottomAnchor="20" style="-fx-padding: 0 0 40 0;">
 
             <!-- ✅ ENHANCED HEADER -->
@@ -163,8 +163,6 @@
                                text="جاري فحص الاتصال..."
                                style="-fx-text-fill: #475569; -fx-font-size: 12px; -fx-font-weight: 600;"/>
                     </HBox>
-
-
                 </HBox>
             </HBox>
 

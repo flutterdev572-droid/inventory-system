@@ -13,21 +13,132 @@
             style="-fx-background-color: #f8fafc;">
 
     <children>
-        <VBox spacing="25" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="25" AnchorPane.rightAnchor="25" style="-fx-padding: 0 0 40 0;">
+        <!-- ✅ SIDEBAR DRAWER -->
+        <VBox fx:id="sidebarDrawer" spacing="0" prefWidth="280" maxWidth="280"
+              style="-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);"
+              AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0">
+
+            <!-- Drawer Header -->
+            <VBox spacing="10" style="-fx-background-color: #2C3E50; -fx-padding: 25 20 20 20;">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <StackPane xmlns:fx="http://javafx.com/fxml"
+                               style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 10;">
+                        <ImageView fitHeight="40" fitWidth="40" preserveRatio="true">
+                            <image>
+                                <Image url="@/images/colord_logo.png"/>
+                            </image>
+                        </ImageView>
+                    </StackPane>
+
+                    <VBox alignment="CENTER_LEFT" spacing="2">
+                        <Label text="CHEM TECH"
+                               style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                        <Label text="لوحة التحكم"
+                               style="-fx-font-size: 11px; -fx-text-fill: #c7d2fe; -fx-font-weight: 500;"/>
+                    </VBox>
+                </HBox>
+
+                <!-- User Info in Sidebar -->
+                <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 10 0 0 0;">
+                    <StackPane style="-fx-background-color: #374151; -fx-background-radius: 20; -fx-padding: 6;">
+                        <Label text="👤" style="-fx-font-size: 12px;"/>
+                    </StackPane>
+                    <Label fx:id="loggedUserLabel" text="مرحباً: "
+                           style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 600;"/>
+                </HBox>
+            </VBox>
+
+            <!-- Quick Actions in Sidebar -->
+            <VBox spacing="0" style="-fx-padding: 20 0 20 0;">
+                <Label text="الإجراءات السريعة"
+                       style="-fx-text-fill: #64748b; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 0 20 15 20;"/>
+
+                <VBox spacing="8" style="-fx-padding: 0 15 0 15;">
+                    <!-- Quick Action Buttons -->
+                    <Button text="➕ إضافة صنف جديد" onAction="#openAddItemPage"
+                            style="-fx-background-color: transparent; -fx-text-fill: #059669; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #d1fae5; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="📦 إدارة المخزون" onAction="#openInventoryManagement"
+                            style="-fx-background-color: transparent; -fx-text-fill: #0369a1; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #dbeafe; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="🧰 تسجيل جهاز جديد" onAction="#openAddDevicePage"
+                            style="-fx-background-color: transparent; -fx-text-fill: #b45309; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #fef3c7; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="🧾 إدارة الأجهزة" onAction="#openDevicesPage"
+                            style="-fx-background-color: transparent; -fx-text-fill: #7c3aed; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #f3e8ff; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="📦 تتبّع السيريال" onAction="#openSerialTracking"
+                            style="-fx-background-color: transparent; -fx-text-fill: #1d4ed8; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #dbeafe; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="📊 التقارير" onAction="#openReports"
+                            style="-fx-background-color: transparent; -fx-text-fill: #0f766e; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #ccfbf1; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="🛠️ صيانة وتوالف" onAction="#onScrapMaintenanceClicked"
+                            style="-fx-background-color: transparent; -fx-text-fill: #dc2626; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #fee2e2; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+
+                    <Button text="💰 التسعير" onAction="#openPricingPage"
+                            style="-fx-background-color: transparent; -fx-text-fill: #d97706; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #fef3c7; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+                    <Button text="🚚 الأجهزة الخارجة من المصنع" onAction="#openDeviceExitPage"
+                            style="-fx-background-color: transparent; -fx-text-fill: #7c3aed; -fx-font-weight: 600;
+                                   -fx-background-radius: 8; -fx-border-color: #f3e8ff; -fx-border-radius: 8;
+                                   -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
+                                   -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+                </VBox>
+            </VBox>
+
+            <!-- Spacer -->
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- Logout Button in Sidebar -->
+            <VBox style="-fx-padding: 20 15 20 15;">
+                <Button text="🚪 تسجيل الخروج" onAction="#logout"
+                        style="-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-weight: 600;
+                               -fx-background-radius: 8; -fx-border-color: #fecaca; -fx-border-radius: 8;
+                               -fx-border-width: 1; -fx-cursor: hand; -fx-padding: 12 15 12 15;"
+                        prefWidth="250" prefHeight="45"/>
+            </VBox>
+        </VBox>
+
+        <!-- ✅ MAIN CONTENT AREA -->
+        <VBox spacing="25" AnchorPane.topAnchor="20" AnchorPane.leftAnchor="295" AnchorPane.rightAnchor="25"
+              AnchorPane.bottomAnchor="20" style="-fx-padding: 0 0 40 0;">
 
             <!-- ✅ ENHANCED HEADER -->
             <HBox spacing="20" alignment="CENTER_LEFT"
                   style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 15 25 15 25;
                          -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 3);">
 
-                <!-- Logo with better styling -->
-                <StackPane>
-                    <ImageView fitHeight="50" fitWidth="50" preserveRatio="true">
-                        <image>
-                            <Image url="@/images/colord_logo.png"/>
-                        </image>
-                    </ImageView>
-                </StackPane>
+                <!-- Menu Toggle Button -->
+                <Button text="☰ القائمة"
+                        onAction="#toggleSidebar"
+                        style="-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: 600;
+                               -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;
+                               -fx-border-width: 1; -fx-cursor: hand; -fx-padding: 8 16 8 16;"
+                        prefWidth="100" prefHeight="36"/>
 
                 <!-- Company Info -->
                 <VBox alignment="CENTER_LEFT" spacing="2">
@@ -53,27 +164,7 @@
                                style="-fx-text-fill: #475569; -fx-font-size: 12px; -fx-font-weight: 600;"/>
                     </HBox>
 
-                    <!-- User Info -->
-                    <HBox alignment="CENTER" spacing="8"
-                          style="-fx-background-color: #f1f5f9; -fx-background-radius: 20; -fx-padding: 6 16 6 16;">
-                        <Label text="👤" style="-fx-font-size: 14px;"/>
-                        <Label fx:id="loggedUserLabel" text="مرحباً: "
-                               style="-fx-text-fill: #475569; -fx-font-size: 12px; -fx-font-weight: 600;"/>
-                    </HBox>
 
-                    <Button text="🎛️ لوحة التحكم" onAction="#openControlPanel"
-                            style="-fx-background-color: white; -fx-text-fill: #7c3aed; -fx-font-weight: 600;
-               -fx-background-radius: 10; -fx-border-color: #f3e8ff; -fx-border-radius: 10;
-               -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-
-                    <!-- Logout Button -->
-                    <Button text="🚪 تسجيل الخروج"
-                            onAction="#logout"
-                            style="-fx-background-color: transparent; -fx-text-fill: #64748b; -fx-font-size: 12px;
-                                   -fx-font-weight: 600; -fx-border-color: #e2e8f0; -fx-border-radius: 8;
-                                   -fx-border-width: 1; -fx-cursor: hand; -fx-padding: 8 16 8 16;"
-                            prefWidth="140" prefHeight="36"/>
                 </HBox>
             </HBox>
 
@@ -206,55 +297,6 @@
                     <VBox fx:id="lastTransactionContainer" spacing="8"/>
                 </VBox>
             </StackPane>
-
-            <!-- ✅ QUICK ACTIONS -->
-            <VBox spacing="15">
-                <Label text="الإجراءات السريعة"
-                       style="-fx-text-fill: #1e293b; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 0 0 5 0;"/>
-                <FlowPane hgap="12" vgap="12" alignment="CENTER">
-                    <Button text="➕ إضافة صنف جديد" onAction="#openAddItemPage"
-                            style="-fx-background-color: white; -fx-text-fill: #059669; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #d1fae5; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="📦 إدارة المخزون" onAction="#openInventoryManagement"
-                            style="-fx-background-color: white; -fx-text-fill: #0369a1; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #dbeafe; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="🧰 تسجيل جهاز جديد" onAction="#openAddDevicePage"
-                            style="-fx-background-color: white; -fx-text-fill: #b45309; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #fef3c7; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="🧾 إدارة الأجهزة" onAction="#openDevicesPage"
-                            style="-fx-background-color: white; -fx-text-fill: #7c3aed; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #f3e8ff; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="📦 تتبّع السيريال" onAction="#openSerialTracking"
-                            style="-fx-background-color: white; -fx-text-fill: #1d4ed8; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #dbeafe; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="📊 التقارير" onAction="#openReports"
-                            style="-fx-background-color: white; -fx-text-fill: #0f766e; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #ccfbf1; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="🛠️ صيانة وتوالف" onAction="#onScrapMaintenanceClicked"
-                            style="-fx-background-color: white; -fx-text-fill: #dc2626; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #fee2e2; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-                    <Button text="💰 التسعير" onAction="#openPricingPage"
-                            style="-fx-background-color: white; -fx-text-fill: #d97706; -fx-font-weight: 600;
-                       -fx-background-radius: 10; -fx-border-color: #fef3c7; -fx-border-radius: 10;
-                       -fx-border-width: 1; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1);"
-                            prefWidth="160" prefHeight="50"/>
-
-                </FlowPane>
-            </VBox>
         </VBox>
     </children>
 </AnchorPane>

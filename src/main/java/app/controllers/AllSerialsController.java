@@ -5,9 +5,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import java.sql.*;
 import java.time.format.DateTimeFormatter;
 
@@ -16,6 +21,8 @@ public class AllSerialsController {
     @FXML private TableView<SerialItem> serialsTable;
     @FXML private TableColumn<SerialItem, String> colSerial;
     @FXML private TableColumn<SerialItem, String> colCreatedAt;
+    @FXML private TableColumn<SerialItem, String> colStatus;
+    @FXML private TableColumn<SerialItem, Void> colAction;
     @FXML private TextField searchField;
     @FXML private Button selectBtn;
     @FXML private Button closeBtn;
@@ -36,9 +43,10 @@ public class AllSerialsController {
     public void setSerials(ObservableList<String> serials) {
         serialsList.clear();
         for (String serial : serials) {
-            // جلب تاريخ الإنشاء الفعلي من قاعدة البيانات
+            // جلب تاريخ الإنشاء وحالة الجهاز من قاعدة البيانات
             String createdAt = getCreatedAtForSerial(serial);
-            serialsList.add(new SerialItem(serial, createdAt));
+            String status = getDeviceStatus(serial);
+            serialsList.add(new SerialItem(serial, createdAt, status));
         }
         setupSearch();
     }
@@ -47,6 +55,10 @@ public class AllSerialsController {
     public void initialize() {
         colSerial.setCellValueFactory(new PropertyValueFactory<>("serialNumber"));
         colCreatedAt.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
+        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        // إعداد عمود الإجراءات
+        setupActionColumn();
 
         // إعداد البحث
         setupSearch();
@@ -66,6 +78,46 @@ public class AllSerialsController {
         closeBtn.setOnAction(e -> closeWindow());
     }
 
+    // إعداد عمود الإجراءات
+    private void setupActionColumn() {
+        Callback<TableColumn<SerialItem, Void>, TableCell<SerialItem, Void>> cellFactory =
+                new Callback<TableColumn<SerialItem, Void>, TableCell<SerialItem, Void>>() {
+                    @Override
+                    public TableCell<SerialItem, Void> call(final TableColumn<SerialItem, Void> param) {
+                        return new TableCell<SerialItem, Void>() {
+                            private final Button viewBtn = new Button("عرض");
+
+                            {
+                                viewBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 10;");
+                                viewBtn.setOnAction(event -> {
+                                    SerialItem data = getTableView().getItems().get(getIndex());
+                                    if (data != null && "خرج من المصنع".equals(data.getStatus())) {
+                                        openDeviceExitDetails(data.getSerialNumber());
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void updateItem(Void item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty) {
+                                    setGraphic(null);
+                                } else {
+                                    SerialItem data = getTableView().getItems().get(getIndex());
+                                    if (data != null && "خرج من المصنع".equals(data.getStatus())) {
+                                        setGraphic(viewBtn);
+                                    } else {
+                                        setGraphic(null);
+                                    }
+                                }
+                            }
+                        };
+                    }
+                };
+
+        colAction.setCellFactory(cellFactory);
+    }
+
     // إعداد وظيفة البحث
     private void setupSearch() {
         filteredData = new FilteredList<>(serialsList, p -> true);
@@ -77,7 +129,8 @@ public class AllSerialsController {
                 }
 
                 String lowerCaseFilter = newValue.toLowerCase();
-                return serial.getSerialNumber().toLowerCase().contains(lowerCaseFilter);
+                return serial.getSerialNumber().toLowerCase().contains(lowerCaseFilter) ||
+                        serial.getStatus().toLowerCase().contains(lowerCaseFilter);
             });
         });
 
@@ -90,10 +143,10 @@ public class AllSerialsController {
         serialsList.clear();
 
         String sql = """
-            SELECT SerialNumber, CreatedAt 
-            FROM DeviceSerials 
-            WHERE DeviceID = ? 
-            ORDER BY CreatedAt DESC
+            SELECT DS.SerialNumber, DS.CreatedAt 
+            FROM DeviceSerials DS 
+            WHERE DS.DeviceID = ? 
+            ORDER BY DS.CreatedAt DESC
         """;
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -105,11 +158,12 @@ public class AllSerialsController {
             while (rs.next()) {
                 String serial = rs.getString("SerialNumber");
                 Timestamp createdAt = rs.getTimestamp("CreatedAt");
-                // تنسيق التاريخ بشكل مناسب
                 String formattedDate = createdAt != null ?
                         createdAt.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) :
                         "غير محدد";
-                serialsList.add(new SerialItem(serial, formattedDate));
+
+                String status = getDeviceStatus(serial);
+                serialsList.add(new SerialItem(serial, formattedDate, status));
             }
 
             setupSearch();
@@ -142,6 +196,51 @@ public class AllSerialsController {
         return "غير معروف";
     }
 
+    // دالة مساعدة لتحديد حالة الجهاز
+    private String getDeviceStatus(String serialNumber) {
+        String sql = "SELECT COUNT(*) as count FROM DeviceExit WHERE SerialNumber = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, serialNumber);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt("count");
+                return count > 0 ? "خرج من المصنع" : "قيد التصنيع";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "قيد التصنيع";
+    }
+
+    // فتح تفاصيل خروج الجهاز
+    private void openDeviceExitDetails(String serialNumber) {
+        try {
+            // تحميل واجهة DeviceExit
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/DeviceExitView.fxml"));
+            Parent root = loader.load();
+
+            DeviceExitController controller = loader.getController();
+
+            // يمكنك إضافة دالة في DeviceExitController للبحث عن سيريال محدد
+            // controller.filterBySerial(serialNumber);
+
+            Stage stage = new Stage();
+            stage.setTitle("تفاصيل خروج الجهاز - " + serialNumber);
+            stage.setScene(new Scene(root, 1000, 700));
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.initOwner(serialsTable.getScene().getWindow());
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("حدث خطأ أثناء فتح تفاصيل الجهاز: " + e.getMessage());
+        }
+    }
+
     private void selectSerial() {
         SerialItem selected = serialsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
@@ -166,13 +265,16 @@ public class AllSerialsController {
     public static class SerialItem {
         private final String serialNumber;
         private final String createdAt;
+        private final String status;
 
-        public SerialItem(String serialNumber, String createdAt) {
+        public SerialItem(String serialNumber, String createdAt, String status) {
             this.serialNumber = serialNumber;
             this.createdAt = createdAt;
+            this.status = status;
         }
 
         public String getSerialNumber() { return serialNumber; }
         public String getCreatedAt() { return createdAt; }
+        public String getStatus() { return status; }
     }
 }

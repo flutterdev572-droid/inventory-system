@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.controllers.DeviceExitController">
+
+    <VBox spacing="15" style="-fx-padding: 20;">
+        <!-- العنوان -->
+        <Label text="اجهزة خرجت من المصنع" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+        <!-- شريط الأدوات -->
+        <VBox spacing="10" style="-fx-background-color: #f8f9fa; -fx-padding: 15; -fx-border-color: #dee2e6; -fx-border-radius: 5;">
+            <!-- البحث -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="البحث:" style="-fx-font-weight: bold;"/>
+                <TextField fx:id="searchField" promptText="🔍 ابحث في جميع الحقول..."
+                           style="-fx-pref-width: 300; -fx-pref-height: 35;"/>
+            </HBox>
+
+            <!-- الفلترة بالتاريخ -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Label text="التاريخ من:" style="-fx-font-weight: bold;"/>
+                <DatePicker fx:id="startDatePicker" style="-fx-pref-width: 150; -fx-pref-height: 35;"/>
+
+                <Label text="إلى:" style="-fx-font-weight: bold;"/>
+                <DatePicker fx:id="endDatePicker" style="-fx-pref-width: 150; -fx-pref-height: 35;"/>
+
+                <Button fx:id="filterBtn" text="تصفية"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-height: 35; -fx-pref-width: 80;"/>
+
+                <Button fx:id="clearFilterBtn" text="مسح الفلتر"
+                        style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-height: 35; -fx-pref-width: 100;"/>
+
+                <Button fx:id="exportBtn" text="📊 تصدير Excel"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-height: 35; -fx-pref-width: 120;"/>
+            </HBox>
+        </VBox>
+
+        <!-- الجدول -->
+        <TableView fx:id="exitTable" prefHeight="500" style="-fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+            <columns>
+                <TableColumn text="اسم الجهاز" fx:id="colDevice" prefWidth="150"/>
+                <TableColumn text="السيريال" fx:id="colSerial" prefWidth="120"/>
+                <TableColumn text="السعر النهائي" fx:id="colPrice" prefWidth="120"/>
+                <TableColumn text="السعر المتجاوز" fx:id="colExceeded" prefWidth="120"/>
+                <TableColumn text="التاريخ" fx:id="colDate" prefWidth="150"/>
+                <TableColumn text="المرسل" fx:id="colDeliveredBy" prefWidth="120"/>
+                <TableColumn text="المستلم" fx:id="colDeliveredTo" prefWidth="120"/>
+            </columns>
+        </TableView>
+    </VBox>
+</AnchorPane>

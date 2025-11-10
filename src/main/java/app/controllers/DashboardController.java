@@ -1,7 +1,6 @@
 package app.controllers;
 
 import app.db.DatabaseConnection;
-import app.models.PermissionManager;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -15,6 +14,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,6 +31,19 @@ public class DashboardController {
     @FXML private Label loggedUserLabel;
     @FXML private Label totalDevicesLabel;
     @FXML private VBox lastTransactionContainer;
+    @FXML
+    private VBox sidebarDrawer;
+
+    @FXML
+    private void toggleSidebar() {
+        if (sidebarDrawer.isVisible()) {
+            sidebarDrawer.setVisible(false);
+            sidebarDrawer.setManaged(false);
+        } else {
+            sidebarDrawer.setVisible(true);
+            sidebarDrawer.setManaged(true);
+        }
+    }
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -39,7 +52,6 @@ public class DashboardController {
             loggedUserLabel.setText("مرحباً: " + name);
         }
     }
-
 
     @FXML
     public void initialize() {
@@ -234,21 +246,7 @@ public class DashboardController {
             System.out.println("❌ خطأ أثناء تسجيل الخروج: " + e.getMessage());
         }
     }
-    private int currentEmployeeId;
-    private PermissionManager.UserPermissions userPermissions;
 
-    public void setLoggedEmployee(int employeeId, String name) {
-        this.currentEmployeeId = employeeId;
-        setLoggedEmployeeName(name);
-        loadUserPermissions();
-        applyPermissions();
-    }
-    private void loadUserPermissions() {
-        this.userPermissions = PermissionManager.getUserPermissions(currentEmployeeId);
-    }
-    private void applyPermissions() {
-        if (userPermissions == null) return;
-    }
     @FXML private void openAddItemPage() { openPage("/views/AddItems.fxml", "إضافة صنف جديد"); }
     @FXML private void openInventoryManagement() { openPage("/views/StockView.fxml", "إدارة المخزون"); }
     @FXML private void openAddDevicePage() { openPage("/views/AddDevice.fxml", "تسجيل جهاز جديد"); }
@@ -259,17 +257,14 @@ public class DashboardController {
     private void openPricingPage() {
         openPage("/views/PricingView.fxml", "💰 إدارة تسعير الأصناف");
     }
-
     @FXML
-    private void openControlPanel() {
-        if (userPermissions != null && userPermissions.canAccessControlPanel) {
-            openPage("/views/ControlPanelView.fxml", "🎛️ لوحة التحكم");
-        } else {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("صلاحية مرفوضة");
-            alert.setHeaderText("ليس لديك صلاحية للوصول إلى لوحة التحكم");
-            alert.showAndWait();
-        }
+    private void openDeviceExitPage() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/DeviceExitView.fxml"));
+        Parent root = loader.load();
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root));
+        stage.setTitle("الأجهزة الخارجة من المصنع");
+        stage.show();
     }
 
 

@@ -16,29 +16,23 @@ public class DatabaseConnection {
     private static String USER;
     private static String PASSWORD;
 
-    // Keep connections but always validate before reuse
-    private static Connection inventoryConnection;
-    private static Connection managementConnection;
+    // إزالة التخزين المؤقت للاتصالات - هذا هو مصدر المشكلة
+    // private static Connection inventoryConnection;
+    // private static Connection managementConnection;
 
     private static final String CONFIG_FILE =
             Paths.get(System.getProperty("user.home"), "warehouse_db_config.properties").toString();
 
     static {
-        // try to load config at class load time, not fatal if missing
         reloadConfig();
     }
 
-    /**
-     * Public reload that will re-read config file and close existing connections.
-     * Use this when user updates configuration.
-     */
     public static synchronized void reloadConfig() {
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(CONFIG_FILE)) {
             props.load(fis);
         } catch (IOException e) {
             System.out.println("⚠️ Config file not found or unreadable: " + e.getMessage());
-            // keep existing values (if any) or leave them null
         }
         HOST = props.getProperty("host", HOST);
         PORT = props.getProperty("port", PORT);
@@ -46,27 +40,6 @@ public class DatabaseConnection {
         MANAGEMENT_DB_NAME = props.getProperty("management_db_name", MANAGEMENT_DB_NAME != null ? MANAGEMENT_DB_NAME : "Chemtech_management");
         USER = props.getProperty("user", USER);
         PASSWORD = props.getProperty("password", PASSWORD);
-        // close old connections to force new ones using new config
-        closeConnections();
-    }
-
-    /**
-     * Close cached connections safely.
-     */
-    public static synchronized void closeConnections() {
-        try {
-            if (inventoryConnection != null && !inventoryConnection.isClosed()) {
-                try { inventoryConnection.close(); } catch (Exception ignored) {}
-            }
-        } catch (SQLException ignored) {}
-        inventoryConnection = null;
-
-        try {
-            if (managementConnection != null && !managementConnection.isClosed()) {
-                try { managementConnection.close(); } catch (Exception ignored) {}
-            }
-        } catch (SQLException ignored) {}
-        managementConnection = null;
     }
 
     private static String buildUrl(String dbName) {
@@ -77,92 +50,95 @@ public class DatabaseConnection {
     }
 
     /**
-     * Return a valid inventory connection. Tries to reuse cached connection if valid,
-     * otherwise creates a new one.
+     * إنشاء اتصال جديد في كل مرة - هذا هو الحل الآمن
      */
-    public static synchronized Connection getInventoryConnection() throws SQLException {
-        // set a short login timeout to fail fast when network is down
-        try { DriverManager.setLoginTimeout(5); } catch (Exception ignored) {}
+    public static Connection getInventoryConnection() throws SQLException {
+        try {
+            DriverManager.setLoginTimeout(5);
+        } catch (Exception ignored) {}
 
-        if (inventoryConnection != null) {
-            try {
-                if (!inventoryConnection.isClosed() && inventoryConnection.isValid(2)) {
-                    return inventoryConnection;
-                } else {
-                    try { inventoryConnection.close(); } catch (Exception ignored) {}
-                    inventoryConnection = null;
-                }
-            } catch (SQLException e) {
-                // treat as invalid and recreate
-                try { inventoryConnection.close(); } catch (Exception ignored) {}
-                inventoryConnection = null;
-            }
-        }
-
-        // Create a new connection
         String url = buildUrl(INVENTORY_DB_NAME != null ? INVENTORY_DB_NAME : "Inventory_DB");
-        inventoryConnection = DriverManager.getConnection(url, USER, PASSWORD);
-        return inventoryConnection;
+        return DriverManager.getConnection(url, USER, PASSWORD);
     }
 
-    public static synchronized Connection getManagementConnection() throws SQLException {
-        try { DriverManager.setLoginTimeout(5); } catch (Exception ignored) {}
-
-        if (managementConnection != null) {
-            try {
-                if (!managementConnection.isClosed() && managementConnection.isValid(2)) {
-                    return managementConnection;
-                } else {
-                    try { managementConnection.close(); } catch (Exception ignored) {}
-                    managementConnection = null;
-                }
-            } catch (SQLException e) {
-                try { managementConnection.close(); } catch (Exception ignored) {}
-                managementConnection = null;
-            }
-        }
+    public static Connection getManagementConnection() throws SQLException {
+        try {
+            DriverManager.setLoginTimeout(5);
+        } catch (Exception ignored) {}
 
         String url = buildUrl(MANAGEMENT_DB_NAME != null ? MANAGEMENT_DB_NAME : "Chemtech_management");
-        managementConnection = DriverManager.getConnection(url, USER, PASSWORD);
-        return managementConnection;
+        return DriverManager.getConnection(url, USER, PASSWORD);
     }
 
     /**
-     * Old compatibility method
+     * للتوافق مع الكود القديم
      */
     public static Connection getConnection() throws SQLException {
         return getInventoryConnection();
     }
 
     /**
-     * Simple test connection (returns message).
+     * اختبار الاتصال - بدون استخدام try-with-resources
      */
     public static String testConnection() {
-        try (Connection conn = getInventoryConnection()) {
-            if (conn != null && !conn.isClosed() && conn.isValid(2)) {
+        Connection conn = null;
+        try {
+            conn = getInventoryConnection();
+            if (conn != null && !conn.isClosed()) {
+                // اختيار بسيط للتأكد من أن الاتصال يعمل
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.executeQuery("SELECT 1");
+                }
                 return "متصل بقاعدة البيانات بنجاح ✅";
             } else {
                 return "فشل التحقق من الاتصال ❌";
             }
         } catch (Exception e) {
             return "فشل الاتصال بقاعدة البيانات ❌: " + e.getMessage();
+        } finally {
+            // إغلاق الاتصال يدوياً
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("خطأ في إغلاق الاتصال: " + e.getMessage());
+                }
+            }
         }
     }
 
     /**
-     * Log action into Logs table. If DB is unreachable we print an error but avoid throwing.
+     * تسجيل الإجراءات
      */
     public static void logAction(String actionType, String description) {
-        try (Connection conn = getInventoryConnection()) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        try {
+            conn = getInventoryConnection();
             String sql = "INSERT INTO Logs (ActionType, Description, EmployeeID) VALUES (?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, actionType);
-                stmt.setString(2, description);
-                stmt.setInt(3, CurrentUser.getId());
-                stmt.executeUpdate();
-            }
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, actionType);
+            stmt.setString(2, description);
+            stmt.setInt(3, CurrentUser.getId());
+            stmt.executeUpdate();
         } catch (Exception e) {
             System.err.println("❌ فشل تسجيل الحدث في اللوج: " + e.getMessage());
+        } finally {
+            // إغلاق الموارد يدوياً
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

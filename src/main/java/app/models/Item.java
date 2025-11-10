@@ -8,6 +8,7 @@ public class Item {
     private final StringProperty unitName;
     private final DoubleProperty quantity;
     private final DoubleProperty minQuantity;
+    private String itemCode;
 
     public Item(int id, String name, String unit, double qty, double minQty) {
         this.id = new SimpleIntegerProperty(id);
@@ -32,6 +33,13 @@ public class Item {
     public double getMinQuantity() { return minQuantity.get(); }
     public int getId() {
         return id.get();
+    }
+    public String getItemCode() {
+        return itemCode;
+    }
+
+    public void setItemCode(String itemCode) {
+        this.itemCode = itemCode;
     }
 
     // ---- Setters (optional for updating data) ----

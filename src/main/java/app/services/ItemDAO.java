@@ -2,6 +2,7 @@ package app.services;
 
 import app.db.DatabaseConnection;
 import app.models.Item;
+import app.services.ItemImportDTO;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -13,24 +14,35 @@ import java.util.List;
 public class ItemDAO {
 
     // ===================================
-    // 1️⃣ إضافة صنف جديد
+    // 1️⃣ إضافة صنف جديد (النسخة الأصلية - علشان التوافق)
     // ===================================
     public int addItem(String name, String unitName, double minQty, double initialQty) throws SQLException {
+        return addItem(name, "", unitName, minQty, initialQty); // كود فارغ علشان التوافق
+    }
+
+    // ===================================
+    // 1️⃣ إضافة صنف جديد (النسخة الجديدة مع الكود)
+    // ===================================
+    public int addItem(String name, String itemCode, String unitName, double minQty, double initialQty) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
             int unitId = getUnitIdByName(unitName, conn);
             if (unitId == -1) return -1;
 
-            PreparedStatement check = conn.prepareStatement("SELECT ItemID FROM Items WHERE ItemName=?");
+            // البحث إذا كان الصنف موجود بالاسم أو بالكود
+            PreparedStatement check = conn.prepareStatement(
+                    "SELECT ItemID FROM Items WHERE ItemName=? OR ItemCode=?");
             check.setString(1, name);
+            check.setString(2, itemCode);
             ResultSet rs = check.executeQuery();
             if (rs.next()) return -1; // موجود بالفعل
 
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO Items (ItemName, UnitID, MinQuantity) VALUES (?, ?, ?)",
+                    "INSERT INTO Items (ItemName, ItemCode, UnitID, MinQuantity) VALUES (?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, name);
-            ps.setInt(2, unitId);
-            ps.setDouble(3, minQty);
+            ps.setString(2, itemCode.isEmpty() ? null : itemCode); // لو الكود فارغ نخليه NULL
+            ps.setInt(3, unitId);
+            ps.setDouble(4, minQty);
             ps.executeUpdate();
 
             rs = ps.getGeneratedKeys();
@@ -51,13 +63,13 @@ public class ItemDAO {
     }
 
     // ===================================
-    // 2️⃣ جلب كل الأصناف
+    // 2️⃣ جلب كل الأصناف (محدث علشان يجيب الكود)
     // ===================================
     public ObservableList<Item> getAllItems() {
         ObservableList<Item> list = FXCollections.observableArrayList();
         try (Connection conn = DatabaseConnection.getConnection()) {
             String query = """
-                SELECT i.ItemID, i.ItemName, u.UnitName, s.Quantity, i.MinQuantity
+                SELECT i.ItemID, i.ItemName, i.ItemCode, u.UnitName, s.Quantity, i.MinQuantity
                 FROM Items i
                 JOIN Units u ON i.UnitID = u.UnitID
                 JOIN StockBalances s ON i.ItemID = s.ItemID
@@ -67,13 +79,15 @@ public class ItemDAO {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                list.add(new Item(
+                Item item = new Item(
                         rs.getInt("ItemID"),
                         rs.getString("ItemName"),
                         rs.getString("UnitName"),
                         rs.getDouble("Quantity"),
                         rs.getDouble("MinQuantity")
-                ));
+                );
+                item.setItemCode(rs.getString("ItemCode")); // ⬅️ إضافة الكود
+                list.add(item);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -82,30 +96,33 @@ public class ItemDAO {
     }
 
     // ===================================
-    // 3️⃣ بحث بالأسماء
+    // 3️⃣ بحث بالأسماء والكود (محدث)
     // ===================================
     public ObservableList<Item> searchItems(String keyword) {
         if (keyword == null || keyword.isEmpty()) return getAllItems();
         ObservableList<Item> list = FXCollections.observableArrayList();
         try (Connection conn = DatabaseConnection.getConnection()) {
             String query = """
-                SELECT i.ItemID, i.ItemName, u.UnitName, s.Quantity, i.MinQuantity
+                SELECT i.ItemID, i.ItemName, i.ItemCode, u.UnitName, s.Quantity, i.MinQuantity
                 FROM Items i
                 JOIN Units u ON i.UnitID = u.UnitID
                 JOIN StockBalances s ON i.ItemID = s.ItemID
-                WHERE i.ItemName LIKE ?
+                WHERE i.ItemName LIKE ? OR i.ItemCode LIKE ?
             """;
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setString(1, "%" + keyword + "%");
+            ps.setString(2, "%" + keyword + "%");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                list.add(new Item(
+                Item item = new Item(
                         rs.getInt("ItemID"),
                         rs.getString("ItemName"),
                         rs.getString("UnitName"),
                         rs.getDouble("Quantity"),
                         rs.getDouble("MinQuantity")
-                ));
+                );
+                item.setItemCode(rs.getString("ItemCode")); // ⬅️ إضافة الكود
+                list.add(item);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,8 +131,10 @@ public class ItemDAO {
     }
 
     // ===================================
-    // 4️⃣ جلب الوحدات
+    // باقي الدوال تفضل كما هي بدون تغيير...
     // ===================================
+
+    // 4️⃣ جلب الوحدات
     public List<String> getAllUnits() throws SQLException {
         List<String> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
@@ -126,9 +145,7 @@ public class ItemDAO {
         return list;
     }
 
-    // ===================================
     // 5️⃣ إضافة كمية جديدة (IN)
-    // ===================================
     public void addStock(int itemId, double qty, int employeeId, String notes) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -158,9 +175,7 @@ public class ItemDAO {
         }
     }
 
-    // ===================================
     // 6️⃣ صرف كمية (OUT)
-    // ===================================
     public void removeStock(int itemId, double qty, int employeeId, String receiver, String notes) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -198,9 +213,7 @@ public class ItemDAO {
         }
     }
 
-    // ===================================
     // 7️⃣ جلب المعاملات في يوم معين
-    // ===================================
     public ObservableList<String> getTransactionsByDate(LocalDate date) {
         ObservableList<String> list = FXCollections.observableArrayList();
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -228,9 +241,7 @@ public class ItemDAO {
         return list;
     }
 
-    // ===================================
     // 🔍 تحديث حالة النواقص
-    // ===================================
     private void updateShortageStatus(int itemId, Connection conn) throws SQLException {
         PreparedStatement ps = conn.prepareStatement("""
             SELECT s.Quantity, i.MinQuantity
@@ -263,9 +274,7 @@ public class ItemDAO {
         }
     }
 
-    // ===================================
     // 8️⃣ حذف الصنف بالكامل
-    // ===================================
     public boolean deleteItemCompletely(int itemId) {
         String[] queries = {
                 "DELETE FROM StockTransactions WHERE ItemID = ?",
@@ -290,9 +299,7 @@ public class ItemDAO {
         }
     }
 
-    // ===================================
     // 🔹 مساعد: جلب ID الوحدة بالاسم
-    // ===================================
     private int getUnitIdByName(String name, Connection conn) throws SQLException {
         PreparedStatement ps = conn.prepareStatement("SELECT UnitID FROM Units WHERE UnitName=?");
         ps.setString(1, name);
@@ -301,9 +308,7 @@ public class ItemDAO {
         return -1;
     }
 
-    //================================
     // Add unit
-    //===============================
     public boolean addUnit(String unitName) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "IF NOT EXISTS (SELECT 1 FROM Units WHERE UnitName = ?) " +
@@ -319,10 +324,7 @@ public class ItemDAO {
         }
     }
 
-
-    //==========================
-    //Add Price
-    //===========================
+    // Add Price
     public void addItemPrice(int itemId, double price) throws SQLException {
         String query = "INSERT INTO ItemPrices (ItemID, UnitPrice, CreatedBy) VALUES (?, ?, NULL)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -333,6 +335,106 @@ public class ItemDAO {
         }
     }
 
+    // ===================================
+// 9️⃣ استيراد الأصناف من Excel
+// ===================================
+// ===================================
+// 9️⃣ استيراد الأصناف من Excel
+// ===================================
+    public String importItemsFromExcel(List<ItemImportDTO> items) {
+        StringBuilder result = new StringBuilder();
+        int successCount = 0;
+        int errorCount = 0;
 
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false); // نبدأ transaction
 
+            for (ItemImportDTO item : items) {
+                try {
+                    // التحقق من البيانات المطلوبة
+                    if (item.getItemName() == null || item.getItemName().trim().isEmpty() ||
+                            item.getUnitName() == null || item.getUnitName().trim().isEmpty()) {
+                        result.append("❌ خطأ: بيانات ناقصة للصنف: ").append(item.getItemName()).append("\n");
+                        errorCount++;
+                        continue;
+                    }
+
+                    // التحقق من وجود الوحدة
+                    int unitId = getUnitIdByName(item.getUnitName().trim(), conn);
+                    if (unitId == -1) {
+                        result.append("❌ خطأ: الوحدة غير موجودة '").append(item.getUnitName())
+                                .append("' للصنف: ").append(item.getItemName()).append("\n");
+                        errorCount++;
+                        continue;
+                    }
+
+                    // التحقق من عدم تكرار اسم الصنف أو الكود
+                    PreparedStatement check = conn.prepareStatement(
+                            "SELECT ItemID FROM Items WHERE ItemName=? OR (ItemCode IS NOT NULL AND ItemCode=?)");
+                    check.setString(1, item.getItemName().trim());
+                    check.setString(2, item.getItemCode() != null ? item.getItemCode().trim() : "");
+                    ResultSet rs = check.executeQuery();
+                    if (rs.next()) {
+                        result.append("⚠️ تحذير: الصنف موجود مسبقاً '").append(item.getItemName())
+                                .append("' أو الكود '").append(item.getItemCode()).append("'\n");
+                        errorCount++;
+                        continue;
+                    }
+
+                    // إضافة الصنف
+                    PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO Items (ItemName, ItemCode, UnitID, MinQuantity) VALUES (?, ?, ?, ?)",
+                            Statement.RETURN_GENERATED_KEYS);
+                    ps.setString(1, item.getItemName().trim());
+                    ps.setString(2, (item.getItemCode() != null && !item.getItemCode().trim().isEmpty()) ?
+                            item.getItemCode().trim() : null);
+                    ps.setInt(3, unitId);
+                    ps.setDouble(4, item.getMinQuantity());
+                    ps.executeUpdate();
+
+                    // جلب الـ ID المُنشأ
+                    rs = ps.getGeneratedKeys();
+                    if (rs.next()) {
+                        int itemId = rs.getInt(1);
+
+                        // إضافة الكمية الأولية
+                        double initialQty = item.getInitialQuantity() != null ? item.getInitialQuantity() : 0;
+                        PreparedStatement bal = conn.prepareStatement(
+                                "INSERT INTO StockBalances (ItemID, Quantity) VALUES (?, ?)");
+                        bal.setInt(1, itemId);
+                        bal.setDouble(2, initialQty);
+                        bal.executeUpdate();
+
+                        // إضافة السعر إذا كان موجود
+                        if (item.getPrice() != null && item.getPrice() > 0) {
+                            PreparedStatement priceStmt = conn.prepareStatement(
+                                    "INSERT INTO ItemPrices (ItemID, UnitPrice, CreatedBy) VALUES (?, ?, NULL)");
+                            priceStmt.setInt(1, itemId);
+                            priceStmt.setDouble(2, item.getPrice());
+                            priceStmt.executeUpdate();
+                        }
+
+                        result.append("✅ تم إضافة: ").append(item.getItemName())
+                                .append(item.getItemCode() != null ? " - كود: " + item.getItemCode() : "")
+                                .append("\n");
+                        successCount++;
+                    }
+
+                } catch (SQLException e) {
+                    result.append("❌ خطأ في: ").append(item.getItemName())
+                            .append(" - ").append(e.getMessage()).append("\n");
+                    errorCount++;
+                }
+            }
+
+            conn.commit(); // نعمل commit للـ transaction
+            result.append("\n📊 ملخص: ").append(successCount).append(" نجاح, ")
+                    .append(errorCount).append(" فشل\n");
+
+        } catch (SQLException e) {
+            result.append("❌ خطأ عام في الاتصال: ").append(e.getMessage());
+        }
+
+        return result.toString();
+    }
 }

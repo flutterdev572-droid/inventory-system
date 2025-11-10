@@ -29,10 +29,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.SnapshotParameters;
@@ -60,6 +57,14 @@ public class SerialTrackingController {
     @FXML private Button priceSerialBtn;
     @FXML private Button showExceededSerialsBtn;
     @FXML private Button showAllSerialsBtn;
+    @FXML
+    private Button exitDeviceBtn;
+    @FXML
+    private TextField deliveredToField;
+    private String selectedDeviceName = "";
+    private String selectedSerial = "";
+    private double finalPrice = 0.0;
+    private double exceededPrice = 0.0;
 
     private final ObservableList<UsageRow> usageList = FXCollections.observableArrayList();
     private final FilteredList<UsageRow> filteredUsageList = new FilteredList<>(usageList);
@@ -91,16 +96,14 @@ public class SerialTrackingController {
         usageTable.setItems(filteredUsageList);
         serialCombo.setEditable(true);
 
-        // ✅ الحل الشامل للعربية والإنجليزية
-        serialCombo.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+        serialCombo.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
             if (!serialCombo.isShowing()) {
                 filterSerials(newValue);
             }
         });
 
-        // ✅ إضافة event filter للتحكم في السلوك
         serialCombo.getEditor().addEventFilter(KeyEvent.KEY_TYPED, event -> {
-            // السماح بالكتابة العادية دون تدخل
+            // السماح بالكتابة العادية
         });
 
         serialCombo.setOnShown(event -> {
@@ -119,7 +122,47 @@ public class SerialTrackingController {
         exportExcelBtn.setOnAction(e -> onExportToExcel());
         showExceededSerialsBtn.setOnAction(e -> onShowExceededSerials());
         showAllSerialsBtn.setOnAction(e -> onShowAllSerials());
+        priceSerialBtn.setOnAction(e -> onPriceSerial());
+
+        // ✅ إضافة مستمع لحدث اختيار السيريال
+        serialCombo.setOnAction(e -> onSerialSelected());
+
+        // ✅ زر الخروج يبدأ مخفي وغير مُدار
+        exitDeviceBtn.setVisible(false);
+        exitDeviceBtn.setManaged(false);
+
+        // ✅ إضافة مستمع لزر الخروج
+        exitDeviceBtn.setOnAction(e -> onExitDeviceClicked());
+
         loadDevices();
+    }
+
+    // ✅ دالة جديدة لمعالجة اختيار السيريال
+    @FXML
+    private void onSerialSelected() {
+        String serial = serialCombo.getValue();
+        Device device = deviceCombo.getValue();
+
+        if (serial != null && !serial.isBlank() && device != null) {
+            selectedDeviceName = device.getName();
+            selectedSerial = serial;
+
+            // ✅ إظهار زر الخروج عند اختيار سيريال صالح
+            exitDeviceBtn.setVisible(true);
+            exitDeviceBtn.setManaged(true);
+
+            // ✅ تحميل بيانات الاستخدام تلقائياً
+            onShowSerial();
+        } else {
+            // ✅ إخفاء الزر إذا لم يكن هناك سيريال محدد
+            hideExitButton();
+        }
+    }
+
+    // ✅ إخفاء زر الخروج
+    private void hideExitButton() {
+        exitDeviceBtn.setVisible(false);
+        exitDeviceBtn.setManaged(false);
     }
 
     private void filterSerials(String filter) {
@@ -146,25 +189,11 @@ public class SerialTrackingController {
             serialCombo.getEditor().positionCaret(caretPosition);
         });
     }
+
     private void onSerialFilterKey(KeyEvent event) {
         String text = serialCombo.getEditor().getText();
         filterSerials(text);
     }
-
-//    private void filterSerials(String filter) {
-//        if (filter == null || filter.isBlank()) {
-//            serialCombo.setItems(masterSerials);
-//            return;
-//        }
-//        final String f = filter.toLowerCase();
-//        ObservableList<String> filtered = FXCollections.observableArrayList();
-//        for (String s : masterSerials) {
-//            if (s.toLowerCase().contains(f)) filtered.add(s);
-//        }
-//        serialCombo.setItems(filtered);
-//        serialCombo.getEditor().setText(filter);
-//        serialCombo.show();
-//    }
 
     // تحميل الأجهزة بدون إظهار ID
     private void loadDevices() {
@@ -188,6 +217,7 @@ public class SerialTrackingController {
         if (selectedDevice == null) {
             masterSerials.clear();
             serialCombo.setItems(masterSerials);
+            hideExitButton(); // ✅ إخفاء الزر عند عدم وجود جهاز
             return;
         }
 
@@ -238,6 +268,7 @@ public class SerialTrackingController {
 
             if (masterSerials.isEmpty()) {
                 showAlert("لا يوجد سيريالات لهذا الجهاز في الفترة المحددة.");
+                hideExitButton(); // ✅ إخفاء الزر إذا لم توجد سيريالات
             }
 
         } catch (Exception e) {
@@ -249,10 +280,179 @@ public class SerialTrackingController {
     public void setSelectedSerial(String serial) {
         Platform.runLater(() -> {
             serialCombo.setValue(serial);
-            onShowSerial(); // عرض بيانات السيريال تلقائياً
+            onSerialSelected(); // ✅ استدعاء الدالة الجديدة بدلاً من onShowSerial مباشرة
         });
     }
 
+    private void onExitDeviceClicked() {
+        if (selectedSerial == null || selectedSerial.isBlank()) {
+            showAlert("لم يتم اختيار سيريال صالح.");
+            return;
+        }
+
+        // فحص إذا كان السيريال مسجل خروج مسبقاً
+        Connection connCheck = null;
+        PreparedStatement psCheck = null;
+        ResultSet rsCheck = null;
+
+        try {
+            connCheck = DatabaseConnection.getConnection();
+            String checkQuery = "SELECT ExitDate FROM DeviceExit WHERE SerialNumber = ?";
+            psCheck = connCheck.prepareStatement(checkQuery);
+            psCheck.setString(1, selectedSerial);
+            rsCheck = psCheck.executeQuery();
+
+            if (rsCheck.next()) {
+                String exitDate = rsCheck.getString("ExitDate");
+
+                Alert existsAlert = new Alert(Alert.AlertType.WARNING);
+                existsAlert.setTitle("تنبيه");
+                existsAlert.setHeaderText("لا يمكن تسجيل خروج الجهاز");
+                existsAlert.setContentText("هذا السيريال تم خروجه مسبقًا بتاريخ:\n" + exitDate);
+                existsAlert.showAndWait();
+                return;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("حدث خطأ أثناء التحقق من السيريال.");
+            return;
+        } finally {
+            try { if (rsCheck != null) rsCheck.close(); } catch (SQLException ignored) {}
+            try { if (psCheck != null) psCheck.close(); } catch (SQLException ignored) {}
+            try { if (connCheck != null) connCheck.close(); } catch (SQLException ignored) {}
+        }
+
+        // طلب اسم المستلم
+        TextInputDialog deliveredToDialog = new TextInputDialog();
+        deliveredToDialog.setTitle("اسم المستلم");
+        deliveredToDialog.setHeaderText("ادخل اسم المستلم");
+        deliveredToDialog.setContentText("المستلم:");
+        Optional<String> deliveredToResult = deliveredToDialog.showAndWait();
+        if (deliveredToResult.isEmpty() || deliveredToResult.get().isBlank()) {
+            showAlert("يرجى إدخال اسم المستلم.");
+            return;
+        }
+        String deliveredTo = deliveredToResult.get();
+
+        // طلب اسم المسلم
+        TextInputDialog deliveredByDialog = new TextInputDialog();
+        deliveredByDialog.setTitle("اسم المسلم");
+        deliveredByDialog.setHeaderText("ادخل اسم المسلم");
+        deliveredByDialog.setContentText("المسلم:");
+        Optional<String> deliveredByResult = deliveredByDialog.showAndWait();
+        if (deliveredByResult.isEmpty() || deliveredByResult.get().isBlank()) {
+            showAlert("يرجى إدخال اسم المسلم.");
+            return;
+        }
+        String deliveredBy = deliveredByResult.get();
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("تأكيد الخروج");
+        alert.setHeaderText("هل أنت متأكد أن الجهاز خرج من المصنع؟");
+        alert.setContentText("لن يمكن تعديل هذه العملية لاحقًا.");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+
+            Connection conn = null;
+            PreparedStatement ps = null;
+
+            try {
+                conn = DatabaseConnection.getConnection();
+                calculatePrices();
+
+                String query = "INSERT INTO DeviceExit (DeviceName, SerialNumber, FinalPrice, ExceededPrice, ExitDate, DeliveredBy, DeliveredTo) VALUES (?, ?, ?, ?, GETDATE(), ?, ?)";
+                ps = conn.prepareStatement(query);
+                ps.setString(1, selectedDeviceName);
+                ps.setString(2, selectedSerial);
+                ps.setDouble(3, finalPrice);
+                ps.setDouble(4, exceededPrice);
+                ps.setString(5, deliveredBy);  // تم التغيير هنا
+                ps.setString(6, deliveredTo);
+
+                int rowsAffected = ps.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("تم الحفظ");
+                    success.setHeaderText(null);
+                    success.setContentText("تم تسجيل خروج الجهاز من المصنع بنجاح ✅");
+                    success.showAndWait();
+                    hideExitButton();
+                } else {
+                    throw new SQLException("لم يتم إدخال أي بيانات");
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                Alert error = new Alert(Alert.AlertType.ERROR);
+                error.setTitle("خطأ");
+                error.setHeaderText("حدث خطأ أثناء حفظ البيانات");
+                error.setContentText("خطأ في الاتصال بقاعدة البيانات: " + e.getMessage());
+                error.showAndWait();
+            } finally {
+                try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+                try { if (conn != null) conn.close(); } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    // ✅ دالة لحساب الأسعار
+    private void calculatePrices() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = """
+                SELECT I.ItemName, ISNULL(SCU.Quantity, 0) AS UsedQty, ISNULL(P.UnitPrice,0) AS Price
+                FROM SerialComponentUsage SCU
+                JOIN Items I ON SCU.ItemID = I.ItemID
+                LEFT JOIN ItemPrices P ON I.ItemID = P.ItemID
+                JOIN DeviceSerials DS ON SCU.SerialID = DS.SerialID
+                WHERE DS.SerialNumber = ?
+                """;
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, selectedSerial);
+            ResultSet rs = ps.executeQuery();
+
+            Map<String, Double> itemQuantities = new HashMap<>();
+            Map<String, Double> itemPrices = new HashMap<>();
+
+            while (rs.next()) {
+                String itemName = rs.getString("ItemName");
+                double qty = rs.getDouble("UsedQty");
+                double price = rs.getDouble("Price");
+
+                itemQuantities.put(itemName, itemQuantities.getOrDefault(itemName, 0.0) + qty);
+                itemPrices.put(itemName, price);
+            }
+
+            finalPrice = 0.0;
+            exceededPrice = 0.0;
+
+            // ✅ جلب الكميات المتوقعة
+            Map<String, Double> expectedQuantities = getExpectedQuantitiesForDevice(deviceCombo.getValue().getId());
+
+            for (Map.Entry<String, Double> entry : itemQuantities.entrySet()) {
+                String itemName = entry.getKey();
+                double totalQty = entry.getValue();
+                double price = itemPrices.getOrDefault(itemName, 0.0);
+                double subtotal = price * totalQty;
+                finalPrice += subtotal;
+
+                // ✅ حساب التجاوز
+                double expected = expectedQuantities.getOrDefault(itemName, 0.0);
+                if (totalQty > expected) {
+                    double exceededQty = totalQty - expected;
+                    double exceededCost = exceededQty * price;
+                    exceededPrice += exceededCost;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("حدث خطأ أثناء حساب الأسعار: " + e.getMessage());
+        }
+    }
 
     private void showAllSerialsInNewWindow() {
         Device selectedDevice = deviceCombo.getValue();
@@ -283,18 +483,19 @@ public class SerialTrackingController {
         }
     }
 
-
     @FXML
     private void onShowSerial() {
         String serial = serialCombo.getValue();
         if (serial == null || serial.isBlank()) {
             showAlert("اختر سيريال أولاً");
+            hideExitButton(); // ✅ إخفاء الزر إذا لم يكن هناك سيريال
             return;
         }
 
         Device device = deviceCombo.getValue();
         if (device == null) {
             showAlert("اختر جهاز أولاً");
+            hideExitButton(); // ✅ إخفاء الزر إذا لم يكن هناك جهاز
             return;
         }
 
@@ -353,10 +554,14 @@ public class SerialTrackingController {
                         usedBy
                 ));
             }
-//            debugExceededItems();
 
             if (rows.isEmpty()) {
                 showAlert("لا توجد بيانات استخدام لهذا السيريال.");
+                hideExitButton(); // ✅ إخفاء الزر إذا لم توجد بيانات
+            } else {
+                // ✅ إظهار الزر إذا كانت هناك بيانات
+                exitDeviceBtn.setVisible(true);
+                exitDeviceBtn.setManaged(true);
             }
 
             usageList.addAll(rows);
@@ -754,8 +959,6 @@ public class SerialTrackingController {
         final double finalExceededTotal = exceededTotal;
         exportExcelBtn.setOnAction(e -> exportPriceDetailsToExcel(deviceName, serial, details, total, finalExceededTotal, expectedQuantities));
 
-
-
         buttons.getChildren().addAll(exportExcelBtn);
 
         container.getChildren().addAll(logo, company, deviceLabel, table, sep, totalLabel, exceededLabel, buttons);
@@ -908,7 +1111,6 @@ public class SerialTrackingController {
         }
     }
 
-    // ✅ تصدير الصورة (معدل)
     // ✅ دالة لجلب الكميات المتوقعة للجهاز
     private Map<String, Double> getExpectedQuantitiesForDevice(int deviceId) {
         Map<String, Double> expectedMap = new HashMap<>();
@@ -939,7 +1141,6 @@ public class SerialTrackingController {
 
         return expectedMap;
     }
-
 
     /// ////////////////////////////
 
@@ -1058,7 +1259,6 @@ public class SerialTrackingController {
         public String getName() {
             return name;
         }
-
 
         @Override
         public String toString() {

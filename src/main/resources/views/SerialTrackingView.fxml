@@ -6,6 +6,7 @@
       fx:controller="app.controllers.SerialTrackingController"
       spacing="10" style="-fx-padding:10;">
 
+    <!-- HBox لاختيار الجهاز والتواريخ -->
     <HBox spacing="8" alignment="CENTER_LEFT">
         <Label text="جهاز:"/>
         <ComboBox fx:id="deviceCombo" promptText="اختر الجهاز" prefWidth="260"/>
@@ -18,12 +19,19 @@
         <Button fx:id="refreshSerialsBtn" text="تحديث السيريالات"/>
     </HBox>
 
+    <!-- HBox للزرار الخروج من الجهاز -->
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Button fx:id="exitDeviceBtn" text="خروج الجهاز"
+                style="-fx-background-color:#f87171; -fx-text-fill:white; -fx-font-weight:bold;"
+                visible="false"/>
+    </HBox>
+
+    <!-- HBox لاختيار السيريال وأزرار التحكم -->
     <HBox spacing="8" alignment="CENTER_LEFT">
         <Label text="سيريال:"/>
         <ComboBox fx:id="serialCombo" promptText="اكتب للبحث أو اختر سيريال" prefWidth="360"/>
         <Button text="عرض التتبع" onAction="#onShowSerial"/>
 
-        <!-- الأزرار الجديدة -->
         <Button fx:id="showExceededSerialsBtn" text="السيريالات المتجاوزة"
                 style="-fx-background-color: #ff6666; -fx-text-fill: white; -fx-font-weight: bold;"
                 onAction="#onShowExceededSerials"/>
@@ -37,6 +45,7 @@
                 style="-fx-background-color:#22c55e; -fx-text-fill:white; -fx-font-weight:bold; -fx-background-radius:10;"/>
     </HBox>
 
+    <!-- جدول الاستخدامات -->
     <TableView fx:id="usageTable" prefHeight="420">
         <columns>
             <TableColumn fx:id="colItem" text="المكون" prefWidth="220"/>

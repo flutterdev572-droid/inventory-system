@@ -1,29 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="app.controllers.AllSerialsController"
-      spacing="10" style="-fx-padding: 15;" prefWidth="600" prefHeight="500">
+      spacing="10" style="-fx-padding: 15;" prefWidth="700" prefHeight="500">
 
-    <Label text="قائمة السيريالات" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+    <Label text="قائمة السيريالات" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
 
     <HBox spacing="10" alignment="CENTER_LEFT">
-        <Label text="بحث:"/>
-        <TextField fx:id="searchField" promptText="ابحث برقم السيريال..." prefWidth="250"/>
+        <Label text="بحث:" style="-fx-font-weight: bold;"/>
+        <TextField fx:id="searchField" promptText="ابحث برقم السيريال أو الحالة..." prefWidth="300"/>
     </HBox>
 
     <TableView fx:id="serialsTable" prefHeight="400">
         <columns>
-            <TableColumn fx:id="colSerial" text="رقم السيريال" prefWidth="300"/>
-            <TableColumn fx:id="colCreatedAt" text="تاريخ الإنشاء" prefWidth="250"/>
+            <TableColumn fx:id="colSerial" text="رقم السيريال" prefWidth="250"/>
+            <TableColumn fx:id="colCreatedAt" text="تاريخ الإنشاء" prefWidth="150"/>
+            <TableColumn fx:id="colStatus" text="حالة الجهاز" prefWidth="120"/>
+            <TableColumn fx:id="colAction" text="الإجراء" prefWidth="80"/>
         </columns>
     </TableView>
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button fx:id="selectBtn" text="اختيار السيريال"
-                style="-fx-background-color: #22c55e; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                style="-fx-background-color: #22c55e; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15;"/>
         <Button fx:id="closeBtn" text="إغلاق"
-                style="-fx-background-color: #6b7280; -fx-text-fill: white;"/>
+                style="-fx-background-color: #6b7280; -fx-text-fill: white; -fx-padding: 8 15;"/>
     </HBox>
 </VBox>

@@ -29,6 +29,9 @@
                 <TextField fx:id="itemNameField" promptText="اسم الصنف"
                            style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
 
+                <TextField fx:id="itemCodeField" promptText="كود الصنف (اختياري)"
+                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
+
                 <ComboBox fx:id="unitComboBox" promptText="وحدة القياس"
                           style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;"/>
 
@@ -45,6 +48,10 @@
                         onAction="#onAddItem"
                         prefHeight="40"
                         style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
+                <Button text="📁 استيراد من Excel"
+                        onAction="#onImportExcel"
+                        prefHeight="40"
+                        style="-fx-background-color: #8b5cf6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
 
                 <!-- إضافة وحدة جديدة داخل نفس الـ VBox -->
                 <VBox spacing="10" style="-fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-padding: 10;">
@@ -54,10 +61,12 @@
                                    style="-fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS"/>
                         <Button text="➕ إضافة" onAction="#onAddUnit"
                                 style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8;"/>
+
                     </HBox>
                 </VBox>
             </children>
         </VBox>
+
 
         <!-- البحث -->
         <TextField fx:id="searchField"
@@ -73,6 +82,7 @@
                    style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-radius: 10;">
             <columns>
                 <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="150"/>
+                <TableColumn fx:id="colItemCode" text="كود الصنف" />
                 <TableColumn fx:id="colUnit" text="الوحدة" prefWidth="80"/>
                 <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="70"/>
                 <TableColumn fx:id="colMinQuantity" text="الحد الأدنى" prefWidth="70"/>

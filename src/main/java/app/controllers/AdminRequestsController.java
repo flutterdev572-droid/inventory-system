@@ -16,6 +16,7 @@ public class AdminRequestsController {
 
     @FXML private TableView<StockRequest> requestsTable;
     @FXML private TableColumn<StockRequest, Integer> requestIdColumn;
+    @FXML private TableColumn<StockRequest, String> itemCodeColumn;
     @FXML private TableColumn<StockRequest, String> itemNameColumn;
     @FXML private TableColumn<StockRequest, String> deviceNameColumn;
     @FXML private TableColumn<StockRequest, String> serialNumberColumn;
@@ -42,6 +43,7 @@ public class AdminRequestsController {
 
     private void setupTableColumns() {
         requestIdColumn.setCellValueFactory(new PropertyValueFactory<>("requestId"));
+        itemCodeColumn.setCellValueFactory(new PropertyValueFactory<>("itemCode"));
         itemNameColumn.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         deviceNameColumn.setCellValueFactory(new PropertyValueFactory<>("deviceName"));
         serialNumberColumn.setCellValueFactory(new PropertyValueFactory<>("serialNumber"));
@@ -68,6 +70,7 @@ public class AdminRequestsController {
         String query = """
             SELECT 
                 sr.RequestID,
+                i.ItemCode,
                 i.ItemName,
                 d.DeviceName,
                 ds.SerialNumber,
@@ -96,6 +99,7 @@ public class AdminRequestsController {
             while (rs.next()) {
                 StockRequest request = new StockRequest(
                         rs.getInt("RequestID"),
+                        rs.getString("ItemCode"), // إضافة هذا الحقل
                         rs.getString("ItemName"),
                         rs.getString("DeviceName"),
                         rs.getString("SerialNumber"),
@@ -146,6 +150,7 @@ public class AdminRequestsController {
                     request.getStatus().equals(statusFilter);
 
             boolean searchMatch = searchTerm.isEmpty() ||
+                    request.getItemCode().toLowerCase().contains(searchTerm) ||
                     request.getItemName().toLowerCase().contains(searchTerm) ||
                     request.getDeviceName().toLowerCase().contains(searchTerm) ||
                     request.getSerialNumber().toLowerCase().contains(searchTerm) ||
@@ -322,6 +327,7 @@ public class AdminRequestsController {
 
         String content = """
             رقم الطلب: %d
+            كود العنصر: %s
             العنصر: %s
             الجهاز: %s
             السيريال: %s
@@ -336,6 +342,7 @@ public class AdminRequestsController {
             وقت الاعتماد: %s
             """.formatted(
                 request.getRequestId(),
+                request.getItemCode(), // إضافة كود العنصر
                 request.getItemName(),
                 request.getDeviceName(),
                 request.getSerialNumber(),
@@ -378,6 +385,7 @@ public class AdminRequestsController {
 
     public static class StockRequest {
         private final int requestId;
+        private final String itemCode; // الحقل الجديد
         private final String itemName;
         private final String deviceName;
         private final String serialNumber;
@@ -393,11 +401,12 @@ public class AdminRequestsController {
         private final int itemId;
         private final int serialId;
 
-        public StockRequest(int requestId, String itemName, String deviceName, String serialNumber,
+        public StockRequest(int requestId, String itemCode, String itemName, String deviceName, String serialNumber,
                             double quantity, String requesterName, Timestamp requestDate, String status,
                             String reason, String defectiveNumber, String assignedToEmployee,
                             int approvedBy, Timestamp approvedDate, int itemId, int serialId) {
             this.requestId = requestId;
+            this.itemCode = itemCode; // إضافة في الكونستراكتور
             this.itemName = itemName;
             this.deviceName = deviceName;
             this.serialNumber = serialNumber;
@@ -415,6 +424,7 @@ public class AdminRequestsController {
         }
 
         public int getRequestId() { return requestId; }
+        public String getItemCode() { return itemCode; } // الجيتار الجديد
         public String getItemName() { return itemName; }
         public String getDeviceName() { return deviceName; }
         public String getSerialNumber() { return serialNumber; }
@@ -429,5 +439,4 @@ public class AdminRequestsController {
         public Timestamp getApprovedDate() { return approvedDate; }
         public int getItemId() { return itemId; }
         public int getSerialId() { return serialId; }
-    }
-}
+    }}

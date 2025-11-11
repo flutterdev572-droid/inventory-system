@@ -25,6 +25,8 @@
     <TableView fx:id="requestsTable" prefHeight="400">
         <columns>
             <TableColumn fx:id="requestIdColumn" text="رقم الطلب" prefWidth="80"/>
+            <!-- إضافة عمود كود العنصر هنا -->
+            <TableColumn fx:id="itemCodeColumn" text="كود العنصر" prefWidth="100"/>
             <TableColumn fx:id="itemNameColumn" text="اسم العنصر" prefWidth="150"/>
             <TableColumn fx:id="deviceNameColumn" text="الجهاز" prefWidth="120"/>
             <TableColumn fx:id="serialNumberColumn" text="السيريال" prefWidth="120"/>

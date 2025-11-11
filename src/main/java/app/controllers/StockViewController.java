@@ -1,11 +1,11 @@
 package app.controllers;
 
+import app.current_user.CurrentUser;
 import app.db.DatabaseConnection;
 import app.services.LogService;
 import app.utils.RawThermalPrinter;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -27,6 +27,7 @@ public class StockViewController {
     @FXML private TableColumn<ItemData, Double> quantityColumn;
     @FXML private TableColumn<ItemData, Double> minQuantityColumn;
     @FXML private TableColumn<ItemData, String> statusColumn;
+    @FXML private TableColumn<ItemData, String> codeColumn;
     @FXML private TextField searchField;
     @FXML private Button refreshButton;
     @FXML private ComboBox<String> statusFilterCombo;
@@ -36,6 +37,7 @@ public class StockViewController {
 
     @FXML
     public void initialize() {
+        codeColumn.setCellValueFactory(new PropertyValueFactory<>("itemCode"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         unitColumn.setCellValueFactory(new PropertyValueFactory<>("unit"));
         quantityColumn.setCellValueFactory(new PropertyValueFactory<>("quantity"));
@@ -44,7 +46,6 @@ public class StockViewController {
 
         loadStockData();
 
-        // ✅ إضافة سيرش فوري
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
             filterItems(newValue);
         });
@@ -54,21 +55,46 @@ public class StockViewController {
         statusFilterCombo.setOnAction(e -> filterByStatus());
     }
 
+    private void filterItems(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            filterByStatus();
+            return;
+        }
+
+        ObservableList<ItemData> filtered = FXCollections.observableArrayList();
+        String searchTerm = keyword.toLowerCase().trim();
+
+        for (ItemData item : allItems) {
+            boolean matchesName = item.getItemName().toLowerCase().contains(searchTerm);
+            boolean matchesCode = item.getItemCode() != null && item.getItemCode().toLowerCase().contains(searchTerm);
+            boolean matchesQuantity = String.valueOf(item.getQuantity()).contains(searchTerm);
+            boolean matchesId = String.valueOf(item.getItemId()).contains(searchTerm);
+            boolean matchesStatus = item.getStatus().toLowerCase().contains(searchTerm);
+
+            // Search by name OR code (main change here)
+            if (matchesName || matchesCode || matchesQuantity || matchesId || matchesStatus) {
+                filtered.add(item);
+            }
+        }
+        stockTable.setItems(filtered);
+    }
+
     private void loadStockData() {
         allItems.clear();
 
         String query = """
-            SELECT 
-                i.ItemID,
-                i.ItemName AS ItemName,
-                u.UnitName AS UnitName,
-                sb.Quantity AS Quantity,
-                i.MinQuantity AS MinQuantity
-            FROM StockBalances sb
-            INNER JOIN Items i ON sb.ItemID = i.ItemID
-            INNER JOIN Units u ON i.UnitID = u.UnitID
-            ORDER BY i.ItemName
-        """;
+        SELECT 
+            i.ItemID,
+            i.ItemCode AS ItemCode,
+            i.ItemName AS ItemName,
+            u.UnitName AS UnitName,
+            sb.Quantity AS Quantity,
+            i.MinQuantity AS MinQuantity
+        FROM StockBalances sb
+        INNER JOIN Items i ON sb.ItemID = i.ItemID
+        INNER JOIN Units u ON i.UnitID = u.UnitID
+        ORDER BY i.ItemName
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -76,6 +102,7 @@ public class StockViewController {
 
             while (rs.next()) {
                 int itemId = rs.getInt("ItemID");
+                String code = rs.getString("ItemCode");
                 String name = rs.getString("ItemName");
                 String unit = rs.getString("UnitName");
                 double qty = rs.getDouble("Quantity");
@@ -83,7 +110,7 @@ public class StockViewController {
 
                 String status = (qty < minQty) ? "⚠️ Low Stock" : "✅ OK";
 
-                allItems.add(new ItemData(itemId, name, unit, qty, minQty, status));
+                allItems.add(new ItemData(itemId, code, name, unit, qty, minQty, status));
             }
 
             stockTable.setItems(allItems);
@@ -93,7 +120,6 @@ public class StockViewController {
             showError("خطأ في تحميل بيانات المخزون: " + e.getMessage());
         }
     }
-
     private void filterByStatus() {
         String selected = statusFilterCombo.getValue();
         if (selected == null || selected.equals("الكل")) {
@@ -110,42 +136,33 @@ public class StockViewController {
         stockTable.setItems(filtered);
     }
 
-    // ✅ سيرش متقدم بالاسم والكمية والـ ID
-    private void filterItems(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            filterByStatus();
-            return;
-        }
+//    private void filterItems(String keyword) {
+//        if (keyword == null || keyword.trim().isEmpty()) {
+//            filterByStatus();
+//            return;
+//        }
+//
+//        ObservableList<ItemData> filtered = FXCollections.observableArrayList();
+//        String searchTerm = keyword.toLowerCase().trim();
+//
+//        for (ItemData item : allItems) {
+//            boolean matchesName = item.getItemName().toLowerCase().contains(searchTerm);
+//            boolean matchesQuantity = String.valueOf(item.getQuantity()).contains(searchTerm);
+//            boolean matchesId = String.valueOf(item.getItemId()).contains(searchTerm);
+//            boolean matchesStatus = item.getStatus().toLowerCase().contains(searchTerm);
+//
+//            if (matchesName || matchesQuantity || matchesId || matchesStatus) {
+//                filtered.add(item);
+//            }
+//        }
+//        stockTable.setItems(filtered);
+//    }
 
-        ObservableList<ItemData> filtered = FXCollections.observableArrayList();
-        String searchTerm = keyword.toLowerCase().trim();
-
-        for (ItemData item : allItems) {
-            // البحث بالاسم
-            boolean matchesName = item.getItemName().toLowerCase().contains(searchTerm);
-
-            // البحث بالكمية
-            boolean matchesQuantity = String.valueOf(item.getQuantity()).contains(searchTerm);
-
-            // البحث بالـ ID
-            boolean matchesId = String.valueOf(item.getItemId()).contains(searchTerm);
-
-            // البحث بالحالة
-            boolean matchesStatus = item.getStatus().toLowerCase().contains(searchTerm);
-
-            if (matchesName || matchesQuantity || matchesId || matchesStatus) {
-                filtered.add(item);
-            }
-        }
-        stockTable.setItems(filtered);
-    }
-
-    // ✅ إضافة كمية (IN) - مع وصف واضح
     @FXML
     private void onAddStock() {
         ItemData selectedItem = stockTable.getSelectionModel().getSelectedItem();
         if (selectedItem == null) {
-            showError("⚠️ يرجى اختيار صنف أولاً!");
+            showError("يرجى اختيار صنف أولاً!");
             return;
         }
 
@@ -157,11 +174,10 @@ public class StockViewController {
             try {
                 double qty = input.getQuantity();
                 if (qty <= 0) {
-                    showError("❌ الكمية يجب أن تكون أكبر من الصفر!");
+                    showError("الكمية يجب أن تكون أكبر من الصفر!");
                     return;
                 }
 
-                // ✅ وصف واضح بدون رموز
                 String description = String.format("تم إضافة %.2f وحدة من الصنف %s - الملاحظات: %s",
                         qty, selectedItem.getItemName(),
                         input.getNotes().isEmpty() ? "لا توجد ملاحظات" : input.getNotes());
@@ -170,21 +186,20 @@ public class StockViewController {
                 updateStock(selectedItem, qty, "IN", input.getNotes());
                 loadStockData();
 
-                showInfo("✅ تم إضافة الكمية بنجاح!");
+                showInfo("تم إضافة الكمية بنجاح!");
 
             } catch (NumberFormatException e) {
-                showError("❌ قيمة الكمية غير صالحة!");
+                showError("قيمة الكمية غير صالحة!");
             }
         }
     }
 
-    // ✅ صرف كمية (OUT) - مع وصف واضح
     @FXML
     private void onRemoveStock() {
         ItemData selectedItem = stockTable.getSelectionModel().getSelectedItem();
 
         if (selectedItem == null) {
-            showError("⚠️ يرجى اختيار صنف أولاً!");
+            showError("يرجى اختيار صنف أولاً!");
             return;
         }
 
@@ -198,22 +213,28 @@ public class StockViewController {
                 double qty = input.getQuantity();
 
                 if (qty <= 0) {
-                    showError("❌ الكمية يجب أن تكون أكبر من الصفر!");
+                    showError("الكمية يجب أن تكون أكبر من الصفر!");
                     return;
                 }
 
                 if (qty > selectedItem.getQuantity()) {
-                    showError("❌ الكمية المطلوبة تتجاوز المخزون المتاح!");
+                    showError("الكمية المطلوبة تتجاوز المخزون المتاح!");
                     return;
                 }
 
-                // ✅ التحقق من إدخال المستلم في حالة الصيانة
+                if (input.getUsageType().equals("جهاز جديد")) {
+                    // ✅ إذا تم التعامل مع الطلب المتجاوز في checkDeviceComponents، لا نكمل
+                    boolean shouldContinue = checkDeviceComponents(selectedItem.getItemId(), input.getDeviceName(), qty, input.getSerialNumber(), input.getNewSerial());
+                    if (!shouldContinue) {
+                        return; // توقف هنا إذا تم التعامل مع الطلب المتجاوز
+                    }
+                }
+
                 if (input.getUsageType().equals("صيانة") && (input.getReceiver() == null || input.getReceiver().trim().isEmpty())) {
-                    showError("❌ في حالة الصيانة يجب إدخال اسم المستلم!");
+                    showError("في حالة الصيانة يجب إدخال اسم المستلم!");
                     return;
                 }
 
-                // ✅ خزن بيانات الصرف مؤقتًا لاستخدامها في updateStock()
                 currentStockOutput = input;
 
                 String description = String.format(
@@ -226,23 +247,220 @@ public class StockViewController {
 
                 LogService.addLog("STOCK_OUT", description);
 
-                // ✅ تنفيذ عملية الصرف وتسجيلها في الجداول
+                // ✅ هذا السطر يتم تنفيذه فقط إذا لم يكن هناك طلب متجاوز
                 updateStock(selectedItem, -qty, "OUT", input.getReceiver() + " - " + input.getNotes());
 
-                // ✅ تحديث الجدول بعد العملية
                 loadStockData();
 
-                showInfo("✅ تم صرف الكمية بنجاح!");
+                showInfo("تم صرف الكمية بنجاح!");
             } catch (NumberFormatException e) {
-                showError("❌ قيمة الكمية غير صالحة!");
+                showError("قيمة الكمية غير صالحة!");
             } finally {
-                // ✅ تفريغ القيمة بعد العملية لتجنب التداخل مع العمليات التالية
                 currentStockOutput = null;
             }
         }
     }
 
-    // ✅ إنشاء دايلوج للإضافة
+    private boolean checkDeviceComponents(int itemId, String deviceName, double requestedQty, String serialNumber, String newSerial) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String finalSerial = (serialNumber != null && !serialNumber.trim().isEmpty()) ? serialNumber : newSerial;
+            if (finalSerial == null || finalSerial.trim().isEmpty()) {
+                showError("يجب اختيار سيريال موجود أو إدخال سيريال جديد!");
+                return false;
+            }
+
+            int serialId = getOrCreateSerialId(deviceName, finalSerial, conn);
+            if (serialId == 0) return false;
+
+            double usedQuantity = getUsedQuantityForSerial(serialId, itemId, conn);
+            double allowedQuantity = getAllowedQuantityForDevice(deviceName, itemId, conn);
+
+            double remainingQuantity = allowedQuantity - usedQuantity;
+
+            if (requestedQty > remainingQuantity) {
+                // ✅ إذا كان هناك تجاوز، تعامل معه وأعد false لوقف العملية
+                return showExceedWarning(itemId, serialId, requestedQty, remainingQuantity, finalSerial);
+            }
+
+            return true; // ✅ لا يوجد تجاوز، أكمل العملية الطبيعية
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("خطأ في التحقق من مكونات الجهاز: " + e.getMessage());
+            return false;
+        }
+    }
+    private double getUsedQuantityForSerial(int serialId, int itemId, Connection conn) throws SQLException {
+        String query = "SELECT SUM(Quantity) FROM SerialComponentUsage WHERE SerialID = ? AND ItemID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, serialId);
+            ps.setInt(2, itemId);
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getDouble(1) : 0;
+        }
+    }
+
+    private double getAllowedQuantityForDevice(String deviceName, int itemId, Connection conn) throws SQLException {
+        String query = "SELECT Quantity FROM DeviceComponents WHERE DeviceID = (SELECT DeviceID FROM Devices WHERE DeviceName = ?) AND ItemID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, deviceName);
+            ps.setInt(2, itemId);
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getDouble(1) : 0;
+        }
+    }
+
+    private int getOrCreateSerialId(String deviceName, String serialNumber, Connection conn) throws SQLException {
+        String checkQuery = "SELECT SerialID FROM DeviceSerials WHERE SerialNumber = ?";
+        try (PreparedStatement ps = conn.prepareStatement(checkQuery)) {
+            ps.setString(1, serialNumber);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("SerialID");
+            }
+        }
+
+        String insertQuery = "INSERT INTO DeviceSerials (DeviceID, SerialNumber, AddedBy) OUTPUT INSERTED.SerialID VALUES ((SELECT DeviceID FROM Devices WHERE DeviceName = ?), ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
+            ps.setString(1, deviceName);
+            ps.setString(2, serialNumber);
+            ps.setInt(3, CurrentUser.getId());
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+        return 0;
+    }
+
+    private boolean showExceedWarning(int itemId, int serialId, double requestedQty, double remainingQty, String serialNumber) {
+        double exceededQty = requestedQty - remainingQty;
+
+        Dialog<ExceedRequest> dialog = new Dialog<>();
+        dialog.setTitle("تحذير تجاوز الكمية المسموحة");
+        dialog.setHeaderText("الكمية المطلوبة تتجاوز الكمية المسموحة للجهاز!\n\n" +
+                "الكمية المتبقية المسموحة: " + remainingQty +
+                "\nالكمية المطلوبة: " + requestedQty +
+                "\nالكمية الزائدة: " + exceededQty +
+                "\n\nسيتم صرف الكمية المسموحة (" + remainingQty + ") الآن، وإرسال طلب للكمية الزائدة للمدير.");
+
+        ButtonType approveButton = new ButtonType("إرسال طلب للمدير", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("إلغاء", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(approveButton, cancelButton);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new javafx.geometry.Insets(20, 150, 10, 10));
+
+        TextField reasonField = new TextField();
+        reasonField.setPromptText("سبب الطلب");
+        TextField defectiveField = new TextField();
+        defectiveField.setPromptText("رقم القطعة المعيبة (إن وجد)");
+
+        grid.add(new Label("السبب:"), 0, 0);
+        grid.add(reasonField, 1, 0);
+        grid.add(new Label("رقم القطعة المعيبة:"), 0, 1);
+        grid.add(defectiveField, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == approveButton) {
+                if (reasonField.getText().trim().isEmpty()) {
+                    showError("يجب إدخال سبب الطلب!");
+                    return null;
+                }
+                return new ExceedRequest(reasonField.getText(), defectiveField.getText());
+            }
+            return null;
+        });
+
+        Optional<ExceedRequest> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            ExceedRequest request = result.get();
+            boolean success = createStockRequest(itemId, serialId, requestedQty, remainingQty, request.getReason(), request.getDefectiveNumber(), serialNumber);
+            // ✅ إذا نجح إنشاء الطلب، أعد false لوقف العملية الرئيسية
+            return !success;
+        }
+        // ✅ إذا ألغى المستخدم، أعد false لوقف العملية
+        return false;
+    }
+    private boolean createStockRequest(int itemId, int serialId, double requestedQty, double remainingQty, String reason, String defectiveNumber, String serialNumber) {
+        double exceededQty = requestedQty - remainingQty;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // 1. First, out the remaining allowed quantity immediately
+            outAllowedQuantity(itemId, serialId, remainingQty, conn);
+
+            // 2. Then create request for exceeded quantity only
+            String query = "INSERT INTO StockRequests (SerialID, ItemID, RequestedQuantity, Reason, DefectiveNumber, AssignedToEmployee, RequestedBy, RequestedByName) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement ps = conn.prepareStatement(query)) {
+                ps.setInt(1, serialId);
+                ps.setInt(2, itemId);
+                ps.setDouble(3, exceededQty); // Only the exceeded part
+                ps.setString(4, reason);
+                ps.setString(5, defectiveNumber);
+                ps.setString(6, "مدير النظام");
+                ps.setInt(7, CurrentUser.getId());
+                ps.setString(8, CurrentUser.getName());
+                ps.executeUpdate();
+            }
+
+            showInfo("تم صرف الكمية المسموحة (" + remainingQty + ") الآن، وتم إرسال طلب للكمية الزائدة (" + exceededQty + ") للمدير");
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("خطأ في إنشاء طلب الصرف: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void outAllowedQuantity(int itemId, int serialId, double quantity, Connection conn) throws SQLException {
+        // Get item data for the transaction
+        ItemData item = getItemData(itemId, conn);
+
+        if (item != null) {
+            // Perform immediate stock out for allowed quantity
+            String description = "صرف كمية مسموحة للجهاز - السيريال: " + serialId;
+            updateStock(item, -quantity, "OUT", "System - " + description);
+
+            // Record in SerialComponentUsage
+            String usageQuery = "INSERT INTO SerialComponentUsage (SerialID, ItemID, Quantity, UsedBy) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement ps = conn.prepareStatement(usageQuery)) {
+                ps.setInt(1, serialId);
+                ps.setInt(2, itemId);
+                ps.setDouble(3, quantity);
+                ps.setInt(4, CurrentUser.getId());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    private ItemData getItemData(int itemId, Connection conn) throws SQLException {
+        String query = "SELECT i.ItemID, i.ItemCode, i.ItemName, u.UnitName, sb.Quantity, i.MinQuantity " +
+                "FROM Items i INNER JOIN Units u ON i.UnitID = u.UnitID " +
+                "INNER JOIN StockBalances sb ON i.ItemID = sb.ItemID " +
+                "WHERE i.ItemID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, itemId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String status = (rs.getDouble("Quantity") < rs.getDouble("MinQuantity")) ? "⚠️ Low Stock" : "✅ OK";
+                return new ItemData(
+                        rs.getInt("ItemID"),
+                        rs.getString("ItemCode"),
+                        rs.getString("ItemName"),
+                        rs.getString("UnitName"),
+                        rs.getDouble("Quantity"),
+                        rs.getDouble("MinQuantity"),
+                        status
+                );
+            }
+        }
+        return null;
+    }
     private Dialog<StockInput> createStockDialog(String title, String content) {
         Dialog<StockInput> dialog = new Dialog<>();
         dialog.setTitle(title);
@@ -269,18 +487,17 @@ public class StockViewController {
 
         dialog.getDialogPane().setContent(grid);
 
-        // التحقق من البيانات
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addButton) {
                 if (quantityField.getText().trim().isEmpty()) {
-                    showError("❌ يرجى إدخال الكمية!");
+                    showError("يرجى إدخال الكمية!");
                     return null;
                 }
                 try {
                     double qty = Double.parseDouble(quantityField.getText());
                     return new StockInput(qty, notesField.getText());
                 } catch (NumberFormatException e) {
-                    showError("❌ قيمة الكمية غير صالحة!");
+                    showError("قيمة الكمية غير صالحة!");
                     return null;
                 }
             }
@@ -289,35 +506,7 @@ public class StockViewController {
 
         return dialog;
     }
-    // ✅ إنشاء Combobox مع خاصية البحث والأوتوكومبليت
-    private <T> void setupSearchableComboBox(ComboBox<T> comboBox, ObservableList<T> items) {
-        comboBox.setItems(items);
-        comboBox.setEditable(true);
 
-        TextField editor = comboBox.getEditor();
-        FilteredList<T> filteredItems = new FilteredList<>(items);
-
-        editor.textProperty().addListener((obs, oldValue, newValue) -> {
-            filteredItems.setPredicate(item -> {
-                if (newValue == null || newValue.isEmpty()) return true;
-                String filterText = newValue.toLowerCase();
-                return item.toString().toLowerCase().contains(filterText);
-            });
-
-            // تحديث القائمة المنسدلة
-            comboBox.setItems(filteredItems);
-            comboBox.show();
-        });
-
-        // إعادة تعيين القائمة عند فقدان التركيز
-        editor.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal) {
-                comboBox.setItems(items);
-            }
-        });
-    }
-    // ✅ إنشاء دايلوج للصرف مع التحكم الديناميكي حسب نوع الاستخدام
-// ✅ إنشاء دايلوج للصرف مع التحكم الديناميكي حسب نوع الاستخدام
     private Dialog<StockOutput> createStockOutDialog(String title, String content) {
         Dialog<StockOutput> dialog = new Dialog<>();
         dialog.setTitle(title);
@@ -341,7 +530,6 @@ public class StockViewController {
         TextField receiverField = new TextField();
         receiverField.setPromptText("اسم المستلم");
 
-        // ✅ حقل جديد لاسم الجهاز/السيريال في الصيانة
         TextField maintenanceDeviceField = new TextField();
         maintenanceDeviceField.setPromptText("اسم الجهاز أو السيريال (للصيانة)");
 
@@ -349,17 +537,14 @@ public class StockViewController {
         notesField.setPromptText("ملاحظات (اختياري)");
         notesField.setPrefRowCount(2);
 
-        // ✅ إعداد نوع الاستخدام
         usageType.setItems(FXCollections.observableArrayList("جهاز جديد", "صيانة", "توالف"));
         usageType.setValue("جهاز جديد");
 
-        // ✅ تحميل الأجهزة
         try (Connection conn = DatabaseConnection.getConnection()) {
             ResultSet rs = conn.prepareStatement("SELECT DeviceName FROM Devices").executeQuery();
             while (rs.next()) deviceCombo.getItems().add(rs.getString(1));
         } catch (Exception e) { e.printStackTrace(); }
 
-        // ✅ تحميل السيريالات عند اختيار الجهاز
         deviceCombo.setOnAction(e -> {
             serialCombo.getItems().clear();
             if (deviceCombo.getValue() != null) {
@@ -374,25 +559,20 @@ public class StockViewController {
             }
         });
 
-        // ✅ التحكم الديناميكي في الحقول حسب نوع الاستخدام
         usageType.setOnAction(e -> {
             String selectedUsage = usageType.getValue();
             boolean isNewDevice = "جهاز جديد".equals(selectedUsage);
             boolean isMaintenance = "صيانة".equals(selectedUsage);
             boolean isScrap = "توالف".equals(selectedUsage);
 
-            // ✅ تفعيل/تعطيل الحقول حسب نوع الاستخدام
             deviceCombo.setDisable(!isNewDevice);
             serialCombo.setDisable(!isNewDevice);
             newSerialField.setDisable(!isNewDevice);
 
-            // ✅ تفعيل حقل المستلم في حالة الصيانة فقط
             receiverField.setDisable(!isMaintenance && !isNewDevice);
 
-            // ✅ تفعيل حقل اسم الجهاز في الصيانة فقط
             maintenanceDeviceField.setDisable(!isMaintenance);
 
-            // ✅ إعادة تعيين الحقول المعطلة
             if (!isNewDevice) {
                 deviceCombo.setValue(null);
                 serialCombo.setValue(null);
@@ -404,7 +584,6 @@ public class StockViewController {
             }
         });
 
-        // ✅ إضافة الحقول للشبكة
         grid.add(new Label("الكمية:"), 0, 0);
         grid.add(quantityField, 1, 0);
 
@@ -423,7 +602,6 @@ public class StockViewController {
         grid.add(new Label("المستلم:"), 0, 5);
         grid.add(receiverField, 1, 5);
 
-        // ✅ إضافة الحقل الجديد للصيانة
         grid.add(new Label("الجهاز/السيريال (للصيانة):"), 0, 6);
         grid.add(maintenanceDeviceField, 1, 6);
 
@@ -432,7 +610,6 @@ public class StockViewController {
 
         dialog.getDialogPane().setContent(grid);
 
-        // ✅ تطبيق الإعدادات الأولية
         usageType.fireEvent(new javafx.event.ActionEvent());
 
         dialog.setResultConverter(dialogButton -> {
@@ -441,20 +618,18 @@ public class StockViewController {
                     double qty = Double.parseDouble(quantityField.getText());
                     String usage = usageType.getValue();
 
-                    // ✅ التحقق من البيانات المطلوبة حسب نوع الاستخدام
                     if ("جهاز جديد".equals(usage) && deviceCombo.getValue() == null) {
-                        showError("❌ في حالة جهاز جديد يجب اختيار الجهاز!");
+                        showError("في حالة جهاز جديد يجب اختيار الجهاز!");
                         return null;
                     }
 
                     if ("صيانة".equals(usage) && (receiverField.getText() == null || receiverField.getText().trim().isEmpty())) {
-                        showError("❌ في حالة الصيانة يجب إدخال اسم المستلم!");
+                        showError("في حالة الصيانة يجب إدخال اسم المستلم!");
                         return null;
                     }
 
-                    // ✅ التحقق من إدخال اسم الجهاز/السيريال في حالة الصيانة
                     if ("صيانة".equals(usage) && (maintenanceDeviceField.getText() == null || maintenanceDeviceField.getText().trim().isEmpty())) {
-                        showError("❌ في حالة الصيانة يجب إدخال اسم الجهاز أو السيريال!");
+                        showError("في حالة الصيانة يجب إدخال اسم الجهاز أو السيريال!");
                         return null;
                     }
 
@@ -466,10 +641,10 @@ public class StockViewController {
                             serialCombo.getValue(),
                             newSerialField.getText(),
                             usageType.getValue(),
-                            maintenanceDeviceField.getText() // ✅ إضافة القيمة الجديدة
+                            maintenanceDeviceField.getText()
                     );
                 } catch (Exception e) {
-                    showError("❌ رجاء إدخال البيانات صحيحة!");
+                    showError("رجاء إدخال البيانات صحيحة!");
                     return null;
                 }
             }
@@ -478,8 +653,7 @@ public class StockViewController {
 
         return dialog;
     }
-    // ✅ تحديث الكمية وتسجيل العملية مع تسجيل في جداول الصيانة والتوالف
-// ✅ تحديث الكمية وتسجيل العملية مع تسجيل في جداول الصيانة والتوالف
+
     private void updateStock(ItemData item, double qtyChange, String type, String notes) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -495,16 +669,17 @@ public class StockViewController {
 
             int transactionId = 0;
 
-            // ✅ تسجيل العملية في StockTransactions
+            // 🧾 تسجيل العملية في StockTransactions
             try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO StockTransactions (ItemID, TransactionType, Quantity, ReceiverName, Notes, EmployeeID) VALUES (?, ?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS TransactionID;"
+                    "INSERT INTO StockTransactions (ItemID, TransactionType, Quantity, ReceiverName, Notes, EmployeeID) " +
+                            "VALUES (?, ?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS TransactionID;"
             )) {
                 ps.setInt(1, item.getItemId());
                 ps.setString(2, type);
                 ps.setDouble(3, Math.abs(qtyChange));
                 ps.setString(4, receiver.isEmpty() ? "System" : receiver);
                 ps.setString(5, cleanNotes);
-                ps.setInt(6, app.current_user.CurrentUser.getId());
+                ps.setInt(6, CurrentUser.getId());
 
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
@@ -512,12 +687,12 @@ public class StockViewController {
                 }
             }
 
-            // ✅ لو العملية OUT فقط وبيانات السيريال موجودة
+            // 🧠 لو العملية صرف
             if (type.equals("OUT") && currentStockOutput != null) {
                 StockOutput output = currentStockOutput;
                 String usageType = output.getUsageType();
 
-                // ✅ تسجيل في جدول الصيانة إذا كان النوع "صيانة"
+                // 🔧 حالة الصيانة
                 if ("صيانة".equals(usageType)) {
                     try (PreparedStatement ps = conn.prepareStatement(
                             "INSERT INTO MaintenanceItems (ItemID, Quantity, ReceiverName, DeviceSerial, Notes, AddedBy) VALUES (?, ?, ?, ?, ?, ?)"
@@ -525,34 +700,34 @@ public class StockViewController {
                         ps.setInt(1, item.getItemId());
                         ps.setDouble(2, Math.abs(qtyChange));
                         ps.setString(3, output.getReceiver());
-                        ps.setString(4, output.getMaintenanceDevice()); // ✅ حفظ اسم الجهاز/السيريال
+                        ps.setString(4, output.getMaintenanceDevice());
                         ps.setString(5, output.getNotes());
-                        ps.setInt(6, app.current_user.CurrentUser.getId());
+                        ps.setInt(6, CurrentUser.getId());
                         ps.executeUpdate();
                     }
                 }
 
-                // ✅ تسجيل في جدول التوالف إذا كان النوع "توالف"
-                if ("توالف".equals(usageType)) {
+                // 🗑️ حالة التوالف
+                else if ("توالف".equals(usageType)) {
                     try (PreparedStatement ps = conn.prepareStatement(
                             "INSERT INTO ScrapItems (ItemID, Quantity, Notes, AddedBy) VALUES (?, ?, ?, ?)"
                     )) {
                         ps.setInt(1, item.getItemId());
                         ps.setDouble(2, Math.abs(qtyChange));
                         ps.setString(3, output.getNotes());
-                        ps.setInt(4, app.current_user.CurrentUser.getId());
+                        ps.setInt(4, CurrentUser.getId());
                         ps.executeUpdate();
                     }
                 }
 
-                // ✅ التعامل مع السيريالات فقط في حالة "جهاز جديد"
-                if ("جهاز جديد".equals(usageType)) {
+                // 🆕 حالة جهاز جديد
+                else if ("جهاز جديد".equals(usageType)) {
                     int serialId = 0;
 
                     String newSerial = output.getNewSerial();
                     String selectedSerial = output.getSerialNumber();
 
-                    // ✅ لو المستخدم اختار سيريال من الكومبو بوكس
+                    // 🟢 لو اختار سيريال موجود
                     if (selectedSerial != null && !selectedSerial.trim().isEmpty()) {
                         try (PreparedStatement ps = conn.prepareStatement(
                                 "SELECT SerialID FROM DeviceSerials WHERE SerialNumber = ?"
@@ -561,49 +736,51 @@ public class StockViewController {
                             ResultSet rs = ps.executeQuery();
                             if (rs.next()) {
                                 serialId = rs.getInt("SerialID");
-                                System.out.println("✅ Using existing SerialID: " + serialId);
                             } else {
-                                showError("⚠️ السيريال المختار غير موجود!");
+                                showError("السيريال المختار غير موجود!");
                                 conn.rollback();
                                 return;
                             }
                         }
+                    }
 
-                    } else if (newSerial != null && !newSerial.trim().isEmpty()) {
-                        // ✅ في حالة إضافة سيريال جديد
+                    // 🟢 لو كتب سيريال جديد
+                    else if (newSerial != null && !newSerial.trim().isEmpty()) {
                         try (PreparedStatement check = conn.prepareStatement(
-                                "SELECT COUNT(*) FROM DeviceSerials WHERE SerialNumber = ?"
+                                "SELECT SerialID FROM DeviceSerials WHERE SerialNumber = ?"
                         )) {
                             check.setString(1, newSerial.trim());
                             ResultSet rs = check.executeQuery();
-                            if (rs.next() && rs.getInt(1) > 0) {
-                                showError("❌ هذا السيريال موجود بالفعل!");
-                                conn.rollback();
-                                return;
-                            }
-                        }
 
-                        try (PreparedStatement ps = conn.prepareStatement(
-                                "INSERT INTO DeviceSerials (DeviceID, SerialNumber, AddedBy) OUTPUT INSERTED.SerialID " +
-                                        "VALUES ((SELECT DeviceID FROM Devices WHERE DeviceName = ?), ?, ?)"
-                        )) {
-                            ps.setString(1, output.getDeviceName());
-                            ps.setString(2, newSerial.trim());
-                            ps.setInt(3, app.current_user.CurrentUser.getId());
-                            ResultSet rs = ps.executeQuery();
                             if (rs.next()) {
-                                serialId = rs.getInt(1);
-                                System.out.println("🆕 Created new SerialID: " + serialId);
+                                // ✅ السيريال موجود بالفعل — استخدمه
+                                serialId = rs.getInt("SerialID");
+                            } else {
+                                // ✅ السيريال غير موجود — أضفه
+                                try (PreparedStatement ps = conn.prepareStatement(
+                                        "INSERT INTO DeviceSerials (DeviceID, SerialNumber, AddedBy) OUTPUT INSERTED.SerialID " +
+                                                "VALUES ((SELECT DeviceID FROM Devices WHERE DeviceName = ?), ?, ?)"
+                                )) {
+                                    ps.setString(1, output.getDeviceName());
+                                    ps.setString(2, newSerial.trim());
+                                    ps.setInt(3, CurrentUser.getId());
+                                    ResultSet insertRs = ps.executeQuery();
+                                    if (insertRs.next()) {
+                                        serialId = insertRs.getInt(1);
+                                    }
+                                }
                             }
                         }
+                    }
 
-                    } else {
-                        showError("⚠️ اختر سيريال موجود أو أضف سيريال جديد أولًا!");
+                    // 🚫 لا يوجد سيريال محدد أو مكتوب
+                    else {
+                        showError("اختر سيريال موجود أو أضف سيريال جديد أولًا!");
                         conn.rollback();
                         return;
                     }
 
-                    // ✅ ربط الصنف المستخدم بالسيريال
+                    // 🔗 ربط المكونات بالسيريال
                     if (serialId > 0) {
                         try (PreparedStatement ps = conn.prepareStatement(
                                 "INSERT INTO SerialComponentUsage (SerialID, ItemID, Quantity, TransactionID, UsedBy) VALUES (?, ?, ?, ?, ?)"
@@ -612,16 +789,17 @@ public class StockViewController {
                             ps.setInt(2, item.getItemId());
                             ps.setDouble(3, Math.abs(qtyChange));
                             ps.setInt(4, transactionId);
-                            ps.setInt(5, app.current_user.CurrentUser.getId());
+                            ps.setInt(5, CurrentUser.getId());
                             ps.executeUpdate();
                         }
                     }
                 }
             }
 
+            // ✅ تنفيذ العملية فعليًا
             conn.commit();
 
-            // ✅ طباعة الريسيت بعد عملية الصرف فقط
+            // 🖨️ محاولة الطباعة
             if (type.equals("OUT")) {
                 try {
                     RawThermalPrinter.printReceiptAsImage(
@@ -629,7 +807,7 @@ public class StockViewController {
                             item.getUnit(),
                             Math.abs(qtyChange),
                             receiver,
-                            app.current_user.CurrentUser.getName(),
+                            CurrentUser.getName(),
                             cleanNotes
                     );
                 } catch (Exception e) {
@@ -642,6 +820,7 @@ public class StockViewController {
             showError("خطأ في تحديث المخزون: " + e.getMessage());
         }
     }
+
     @FXML
     private void onExportClicked() {
         try {
@@ -656,7 +835,7 @@ public class StockViewController {
             Sheet sheet = workbook.createSheet("Stock Data");
 
             Row header = sheet.createRow(0);
-            String[] columns = {"اسم الصنف", "الوحدة", "الكمية", "الحد الأدنى", "الحالة"};
+            String[] columns = {"كود الصنف", "اسم الصنف", "الوحدة", "الكمية", "الحد الأدنى", "الحالة"};
             for (int i = 0; i < columns.length; i++) {
                 org.apache.poi.ss.usermodel.Cell cell = header.createCell(i);
                 cell.setCellValue(columns[i]);
@@ -671,11 +850,12 @@ public class StockViewController {
             int rowIdx = 1;
             for (ItemData item : dataToExport) {
                 Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(item.getItemName());
-                row.createCell(1).setCellValue(item.getUnit());
-                row.createCell(2).setCellValue(item.getQuantity());
-                row.createCell(3).setCellValue(item.getMinQuantity());
-                row.createCell(4).setCellValue(item.getStatus());
+                row.createCell(0).setCellValue(item.getItemCode() != null ? item.getItemCode() : "");
+                row.createCell(1).setCellValue(item.getItemName());
+                row.createCell(2).setCellValue(item.getUnit());
+                row.createCell(3).setCellValue(item.getQuantity());
+                row.createCell(4).setCellValue(item.getMinQuantity());
+                row.createCell(5).setCellValue(item.getStatus());
             }
 
             for (int i = 0; i < columns.length; i++) sheet.autoSizeColumn(i);
@@ -685,10 +865,9 @@ public class StockViewController {
             }
             workbook.close();
 
-            // ✅ تسجيل عملية التصدير في اللوج
             LogService.addLog("EXPORT_REPORT", "تم تصدير تقرير المخزون إلى Excel");
 
-            showInfo("✅ تم تصدير الملف بنجاح:\n" + file.getAbsolutePath());
+            showInfo("تم تصدير الملف بنجاح:\n" + file.getAbsolutePath());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -696,16 +875,13 @@ public class StockViewController {
         }
     }
 
-    // ✅ تحديث الجدول
     @FXML
     private void onRefreshClicked() {
         loadStockData();
-        // ✅ تسجيل عملية التحديث في اللوج
         LogService.addLog("REFRESH_DATA", "تم تحديث بيانات المخزون");
-        showInfo("✅ تم تحديث البيانات");
+        showInfo("تم تحديث البيانات");
     }
 
-    // ✅ تنبيهات
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("خطأ");
@@ -722,17 +898,18 @@ public class StockViewController {
         alert.showAndWait();
     }
 
-    // ✅ كلاسات للبيانات
     public static class ItemData {
         private final int itemId;
+        private final String itemCode;
         private final String itemName;
         private final String unit;
         private final double quantity;
         private final double minQuantity;
         private final String status;
 
-        public ItemData(int itemId, String itemName, String unit, double quantity, double minQuantity, String status) {
+        public ItemData(int itemId, String itemCode, String itemName, String unit, double quantity, double minQuantity, String status) {
             this.itemId = itemId;
+            this.itemCode = itemCode;
             this.itemName = itemName;
             this.unit = unit;
             this.quantity = quantity;
@@ -741,14 +918,13 @@ public class StockViewController {
         }
 
         public int getItemId() { return itemId; }
+        public String getItemCode() { return itemCode; }
         public String getItemName() { return itemName; }
         public String getUnit() { return unit; }
         public double getQuantity() { return quantity; }
         public double getMinQuantity() { return minQuantity; }
         public String getStatus() { return status; }
     }
-
-    // ✅ كلاس لإدخال البيانات للإضافة
     private static class StockInput {
         private final double quantity;
         private final String notes;
@@ -762,8 +938,6 @@ public class StockViewController {
         public String getNotes() { return notes; }
     }
 
-    // ✅ كلاس لإدخال البيانات للصرف
-// ✅ كلاس لإدخال البيانات للصرف
     private static class StockOutput {
         private final double quantity;
         private final String receiver;
@@ -772,7 +946,7 @@ public class StockViewController {
         private final String serialNumber;
         private final String newSerial;
         private final String usageType;
-        private final String maintenanceDevice; // ✅ حقل جديد لاسم الجهاز في الصيانة
+        private final String maintenanceDevice;
 
         public StockOutput(double quantity, String receiver, String notes,
                            String deviceName, String serialNumber, String newSerial,
@@ -794,6 +968,19 @@ public class StockViewController {
         public String getSerialNumber() { return serialNumber; }
         public String getNewSerial() { return newSerial; }
         public String getUsageType() { return usageType; }
-        public String getMaintenanceDevice() { return maintenanceDevice; } // ✅ دالة جديدة
+        public String getMaintenanceDevice() { return maintenanceDevice; }
+    }
+
+    private static class ExceedRequest {
+        private final String reason;
+        private final String defectiveNumber;
+
+        public ExceedRequest(String reason, String defectiveNumber) {
+            this.reason = reason;
+            this.defectiveNumber = defectiveNumber;
+        }
+
+        public String getReason() { return reason; }
+        public String getDefectiveNumber() { return defectiveNumber; }
     }
 }

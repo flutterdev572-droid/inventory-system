@@ -294,6 +294,10 @@ public class DashboardController {
         stage.setTitle("الأجهزة الخارجة من المصنع");
         stage.show();
     }
+    @FXML
+    private void openRequestView() {
+        openPage("/views/AdminRequests.fxml", "📦 طلبات الصرف");
+    }
 
     @FXML
     private void openReports() {

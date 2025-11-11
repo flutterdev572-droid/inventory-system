@@ -17,6 +17,7 @@ public class PricingController {
     @FXML private TextField priceField;
     @FXML private TextField tableSearchField;
     @FXML private TableView<ItemPrice> pricingTable;
+    @FXML private TableColumn<ItemPrice, String> colItemCode; // العمود الجديد
     @FXML private TableColumn<ItemPrice, String> colItem;
     @FXML private TableColumn<ItemPrice, Double> colPrice;
 
@@ -26,6 +27,8 @@ public class PricingController {
 
     @FXML
     public void initialize() {
+        // إعداد أعمدة الجدول
+        colItemCode.setCellValueFactory(data -> data.getValue().itemCodeProperty()); // العمود الجديد
         colItem.setCellValueFactory(data -> data.getValue().itemNameProperty());
         colPrice.setCellValueFactory(data -> data.getValue().priceProperty().asObject());
 
@@ -41,7 +44,7 @@ public class PricingController {
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement("""
-                     SELECT i.ItemID, i.ItemName, ISNULL(p.UnitPrice, 0) AS UnitPrice
+                     SELECT i.ItemID, i.ItemName, i.ItemCode, ISNULL(p.UnitPrice, 0) AS UnitPrice
                      FROM Items i
                      LEFT JOIN ItemPrices p ON i.ItemID = p.ItemID
                      ORDER BY i.ItemName ASC
@@ -51,9 +54,10 @@ public class PricingController {
             while (rs.next()) {
                 int itemId = rs.getInt("ItemID");
                 String name = rs.getString("ItemName");
+                String itemCode = rs.getString("ItemCode"); // جلب كود الصنف
                 double price = rs.getDouble("UnitPrice");
 
-                pricingList.add(new ItemPrice(itemId, name, price));
+                pricingList.add(new ItemPrice(itemId, name, itemCode, price));
                 allItemNames.add(name);
             }
 
@@ -111,12 +115,15 @@ public class PricingController {
         });
     }
 
-    // ✅ فلترة الجدول
+    // ✅ فلترة الجدول - تم التعديل للبحث بالاسم والكود
     private void setupTableSearch() {
         tableSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
             filteredList.setPredicate(item -> {
                 if (newVal == null || newVal.isEmpty()) return true;
-                return item.getItemName().toLowerCase().contains(newVal.toLowerCase());
+
+                String searchText = newVal.toLowerCase();
+                return item.getItemName().toLowerCase().contains(searchText) ||
+                        (item.getItemCode() != null && item.getItemCode().toLowerCase().contains(searchText));
             });
         });
     }
@@ -244,24 +251,28 @@ public class PricingController {
         alert.showAndWait();
     }
 
-    // ✅ كلاس مساعد
+    // ✅ كلاس مساعد - تم التعديل لإضافة كود الصنف
     public static class ItemPrice {
         private final javafx.beans.property.SimpleIntegerProperty itemId;
         private final javafx.beans.property.SimpleStringProperty itemName;
+        private final javafx.beans.property.SimpleStringProperty itemCode; // الخاصية الجديدة
         private final javafx.beans.property.SimpleDoubleProperty price;
 
-        public ItemPrice(int itemId, String itemName, double price) {
+        public ItemPrice(int itemId, String itemName, String itemCode, double price) {
             this.itemId = new javafx.beans.property.SimpleIntegerProperty(itemId);
             this.itemName = new javafx.beans.property.SimpleStringProperty(itemName);
+            this.itemCode = new javafx.beans.property.SimpleStringProperty(itemCode); // تهيئة كود الصنف
             this.price = new javafx.beans.property.SimpleDoubleProperty(price);
         }
 
         public int getItemId() { return itemId.get(); }
         public String getItemName() { return itemName.get(); }
+        public String getItemCode() { return itemCode.get(); } // جيتر جديد
         public double getPrice() { return price.get(); }
 
         public javafx.beans.property.IntegerProperty itemIdProperty() { return itemId; }
         public javafx.beans.property.StringProperty itemNameProperty() { return itemName; }
+        public javafx.beans.property.StringProperty itemCodeProperty() { return itemCode; } // خاصية جديدة
         public javafx.beans.property.DoubleProperty priceProperty() { return price; }
     }
 }

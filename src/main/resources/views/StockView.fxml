@@ -35,6 +35,7 @@
         <TableView fx:id="stockTable" prefHeight="500"
                    style="-fx-background-color:white; -fx-border-color:#e2e8f0; -fx-border-radius:10;">
             <columns>
+                <TableColumn fx:id="codeColumn" text="كود الصنف" prefWidth="120"/>
                 <TableColumn fx:id="nameColumn" text="اسم الصنف" prefWidth="250"/>
                 <TableColumn fx:id="unitColumn" text="الوحدة" prefWidth="100"/>
                 <TableColumn fx:id="quantityColumn" text="الكمية" prefWidth="120"/>

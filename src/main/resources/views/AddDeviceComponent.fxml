@@ -11,7 +11,7 @@
     <VBox spacing="15" padding="20">
         <Label text="إضافة مكوّن للجهاز" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
 
-        <ComboBox fx:id="itemComboBox" promptText="اختر الصنف" />
+        <ComboBox fx:id="itemComboBox" promptText="ابحث بالاسم أو الكود..." prefWidth="350" />
 
         <TextField fx:id="quantityField" promptText="أدخل الكمية" />
 

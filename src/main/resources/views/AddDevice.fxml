@@ -26,7 +26,7 @@
 
             <HBox spacing="10">
                 <Label text="الصنف:"/>
-                <ComboBox fx:id="itemComboBox" prefWidth="250"/>
+                <ComboBox fx:id="itemComboBox" prefWidth="250" promptText="ابحث بالاسم أو الكود..."/>
                 <Label text="الكمية:"/>
                 <TextField fx:id="quantityField" prefWidth="100"/>
                 <Button fx:id="addItemButton" text="إضافة"
@@ -35,8 +35,9 @@
 
             <TableView fx:id="componentTable" prefHeight="350">
                 <columns>
-                    <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="400"/>
-                    <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="150"/>
+                    <TableColumn fx:id="colItemCode" text="كود الصنف" prefWidth="150"/>
+                    <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="300"/>
+                    <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="100"/>
                 </columns>
             </TableView>
         </VBox>

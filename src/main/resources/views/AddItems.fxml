@@ -81,8 +81,8 @@
                    prefWidth="420" prefHeight="400"
                    style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-radius: 10;">
             <columns>
-                <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="150"/>
                 <TableColumn fx:id="colItemCode" text="كود الصنف" />
+                <TableColumn fx:id="colItemName" text="اسم الصنف" prefWidth="150"/>
                 <TableColumn fx:id="colUnit" text="الوحدة" prefWidth="80"/>
                 <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="70"/>
                 <TableColumn fx:id="colMinQuantity" text="الحد الأدنى" prefWidth="70"/>

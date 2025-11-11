@@ -33,13 +33,14 @@
             <!-- مربع بحث للفلترة داخل الجدول -->
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label text="بحث:"/>
-                <TextField fx:id="tableSearchField" promptText="ابحث عن صنف..." prefWidth="300"/>
+                <TextField fx:id="tableSearchField" promptText="ابحث عن صنف أو كود..." prefWidth="300"/>
             </HBox>
 
             <!-- جدول الأسعار -->
-            <TableView fx:id="pricingTable" prefHeight="400" prefWidth="800">
+            <TableView fx:id="pricingTable" prefHeight="400" prefWidth="900">
                 <columns>
-                    <TableColumn fx:id="colItem" text="اسم الصنف" prefWidth="400"/>
+                    <TableColumn fx:id="colItemCode" text="كود الصنف" prefWidth="150"/>
+                    <TableColumn fx:id="colItem" text="اسم الصنف" prefWidth="350"/>
                     <TableColumn fx:id="colPrice" text="السعر" prefWidth="200"/>
                 </columns>
             </TableView>

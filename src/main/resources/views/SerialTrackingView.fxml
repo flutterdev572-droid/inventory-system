@@ -48,6 +48,7 @@
     <!-- جدول الاستخدامات -->
     <TableView fx:id="usageTable" prefHeight="420">
         <columns>
+            <TableColumn fx:id="colItemCode" text="كود الصنف" prefWidth="120"/>
             <TableColumn fx:id="colItem" text="المكون" prefWidth="220"/>
             <TableColumn fx:id="colExpected" text="المفروض" prefWidth="100"/>
             <TableColumn fx:id="colUsed" text="المستخدم" prefWidth="100"/>

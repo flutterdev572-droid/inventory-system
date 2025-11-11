@@ -107,6 +107,19 @@
                                    -fx-background-radius: 8; -fx-border-color: #f3e8ff; -fx-border-radius: 8;
                                    -fx-border-width: 1; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;
                                    -fx-padding: 12 15 12 15;" prefWidth="250" prefHeight="45"/>
+                    <Button text="📦 طلبات الصرف" onAction="#openRequestView"
+                            style="-fx-background-color: transparent;
+               -fx-text-fill: #2563eb;
+               -fx-font-weight: 600;
+               -fx-background-radius: 8;
+               -fx-border-color: #bfdbfe;
+               -fx-border-radius: 8;
+               -fx-border-width: 1;
+               -fx-cursor: hand;
+               -fx-alignment: CENTER_LEFT;
+               -fx-padding: 12 15 12 15;"
+                            prefWidth="250" prefHeight="45"/>
+
                 </VBox>
             </VBox>
 

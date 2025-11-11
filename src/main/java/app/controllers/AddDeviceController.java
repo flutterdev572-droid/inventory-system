@@ -19,11 +19,13 @@ public class AddDeviceController {
     @FXML private TextField quantityField;
     @FXML private TableView<ComponentEntry> componentTable;
     @FXML private TableColumn<ComponentEntry, String> colItemName;
+    @FXML private TableColumn<ComponentEntry, String> colItemCode; // عمود جديد
     @FXML private TableColumn<ComponentEntry, Double> colQuantity;
     @FXML private Button addItemButton;
     @FXML private Button saveDeviceButton;
 
     private ObservableList<String> allItems = FXCollections.observableArrayList();
+    private Map<String, String> itemCodeMap = new HashMap<>(); // خريطة لتخزين الأسماء والأكواد
     private ObservableList<ComponentEntry> components = FXCollections.observableArrayList();
     private boolean filtering = false; // علامة لمنع التكرار
 
@@ -35,19 +37,44 @@ public class AddDeviceController {
         loadItems();
 
         // دعم البحث داخل ComboBox
+        setupComboBoxSearch();
+
+        addItemButton.setOnAction(e -> addComponent());
+        saveDeviceButton.setOnAction(e -> saveDevice());
+    }
+
+    private void setupComboBoxSearch() {
         itemComboBox.setEditable(true);
+
+        // إضافة Placeholder للبحث
+        itemComboBox.setPromptText("ابحث بالاسم أو الكود...");
+
+        // إعداد البحث في ComboBox
         itemComboBox.getEditor().textProperty().addListener((obs, old, newVal) -> {
             if (!filtering) {
                 filterItems(newVal);
             }
         });
 
-        addItemButton.setOnAction(e -> addComponent());
-        saveDeviceButton.setOnAction(e -> saveDevice());
+        // إظهار القائمة عند النقر على ComboBox
+        itemComboBox.setOnMouseClicked(e -> {
+            if (!itemComboBox.isShowing()) {
+                filterItems(itemComboBox.getEditor().getText());
+                itemComboBox.show();
+            }
+        });
+
+        // إعادة تعيين التصفية عند فقدان التركيز إذا كان النص فارغاً
+        itemComboBox.getEditor().focusedProperty().addListener((obs, old, newVal) -> {
+            if (!newVal && (itemComboBox.getEditor().getText() == null || itemComboBox.getEditor().getText().isEmpty())) {
+                filterItems("");
+            }
+        });
     }
 
     private void setupTable() {
         colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        colItemCode.setCellValueFactory(new PropertyValueFactory<>("itemCode")); // عمود الكود
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         componentTable.setItems(components);
 
@@ -76,11 +103,15 @@ public class AddDeviceController {
 
     private void loadItems() {
         allItems.clear();
+        itemCodeMap.clear();
         try (Connection conn = DatabaseConnection.getInventoryConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT ItemName FROM Items ORDER BY ItemName");
+             PreparedStatement stmt = conn.prepareStatement("SELECT ItemName, ItemCode FROM Items ORDER BY ItemName");
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                allItems.add(rs.getString("ItemName"));
+                String itemName = rs.getString("ItemName");
+                String itemCode = rs.getString("ItemCode");
+                allItems.add(itemName);
+                itemCodeMap.put(itemName, itemCode != null ? itemCode : "بدون كود");
             }
             itemComboBox.setItems(FXCollections.observableArrayList(allItems));
         } catch (SQLException e) {
@@ -96,7 +127,10 @@ public class AddDeviceController {
             } else {
                 String lower = query.toLowerCase();
                 List<String> filtered = allItems.stream()
-                        .filter(i -> i.toLowerCase().contains(lower))
+                        .filter(i ->
+                                i.toLowerCase().contains(lower) ||
+                                        (itemCodeMap.get(i) != null && itemCodeMap.get(i).toLowerCase().contains(lower))
+                        )
                         .collect(Collectors.toList());
                 itemComboBox.setItems(FXCollections.observableArrayList(filtered));
             }
@@ -123,6 +157,9 @@ public class AddDeviceController {
             return;
         }
 
+        // الحصول على كود العنصر
+        String itemCode = itemCodeMap.get(itemName);
+
         // تحديث لو المكون مضاف مسبقًا
         for (ComponentEntry entry : components) {
             if (entry.getItemName().equals(itemName)) {
@@ -133,7 +170,7 @@ public class AddDeviceController {
             }
         }
 
-        components.add(new ComponentEntry(itemName, qty));
+        components.add(new ComponentEntry(itemName, itemCode, qty));
         componentTable.refresh();
         clearComponentFields();
     }
@@ -272,6 +309,7 @@ public class AddDeviceController {
             }
         }
     }
+
     public void loadForEdit(int deviceId, String deviceName) {
         this.editingDeviceId = deviceId;
         this.deviceNameField.setText(deviceName);
@@ -279,7 +317,7 @@ public class AddDeviceController {
 
         try (Connection conn = DatabaseConnection.getInventoryConnection();
              PreparedStatement stmt = conn.prepareStatement("""
-                 SELECT i.ItemName, dc.Quantity
+                 SELECT i.ItemName, i.ItemCode, dc.Quantity
                  FROM DeviceComponents dc
                  JOIN Items i ON dc.ItemID = i.ItemID
                  WHERE dc.DeviceID = ?
@@ -287,7 +325,12 @@ public class AddDeviceController {
             stmt.setInt(1, deviceId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                components.add(new ComponentEntry(rs.getString("ItemName"), rs.getDouble("Quantity")));
+                String itemCode = rs.getString("ItemCode");
+                components.add(new ComponentEntry(
+                        rs.getString("ItemName"),
+                        itemCode != null ? itemCode : "بدون كود",
+                        rs.getDouble("Quantity")
+                ));
             }
             componentTable.refresh();
         } catch (SQLException e) {
@@ -304,14 +347,17 @@ public class AddDeviceController {
 
     public static class ComponentEntry {
         private String itemName;
+        private String itemCode;
         private double quantity;
 
-        public ComponentEntry(String itemName, double quantity) {
+        public ComponentEntry(String itemName, String itemCode, double quantity) {
             this.itemName = itemName;
+            this.itemCode = itemCode;
             this.quantity = quantity;
         }
 
         public String getItemName() { return itemName; }
+        public String getItemCode() { return itemCode; }
         public double getQuantity() { return quantity; }
         public void setQuantity(double q) { this.quantity = q; }
     }

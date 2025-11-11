@@ -18,6 +18,7 @@ import java.sql.SQLException;
 public class DeviceComponentsController {
 
     @FXML private TableView<ComponentModel> componentsTable;
+    @FXML private TableColumn<ComponentModel, String> colItemCode; // العمود الجديد
     @FXML private TableColumn<ComponentModel, String> colItemName;
     @FXML private TableColumn<ComponentModel, Double> colQuantity;
     @FXML private TableColumn<ComponentModel, Button> colEdit;
@@ -32,6 +33,8 @@ public class DeviceComponentsController {
 
     @FXML
     public void initialize() {
+        // إعداد أعمدة الجدول
+        colItemCode.setCellValueFactory(new PropertyValueFactory<>("itemCode")); // العمود الجديد
         colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         colEdit.setCellValueFactory(new PropertyValueFactory<>("editButton"));
@@ -43,7 +46,7 @@ public class DeviceComponentsController {
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = """
-                SELECT DC.ID, I.ItemName, DC.Quantity
+                SELECT DC.ID, I.ItemName, I.ItemCode, DC.Quantity
                 FROM DeviceComponents DC
                 JOIN Items I ON DC.ItemID = I.ItemID
                 WHERE DC.DeviceID = ?
@@ -54,9 +57,9 @@ public class DeviceComponentsController {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-
                 int compID = rs.getInt("ID");
                 String itemName = rs.getString("ItemName");
+                String itemCode = rs.getString("ItemCode"); // جلب كود الصنف
                 double qty = rs.getDouble("Quantity");
 
                 Button editBtn = new Button("✏ تعديل");
@@ -65,8 +68,9 @@ public class DeviceComponentsController {
                 editBtn.setOnAction(e -> editComponent(compID, itemName, qty));
                 deleteBtn.setOnAction(e -> deleteComponent(compID));
 
+                // تمرير كود الصنف للموديل
                 componentsTable.getItems().add(
-                        new ComponentModel(compID, itemName, qty, editBtn, deleteBtn)
+                        new ComponentModel(compID, itemName, itemCode, qty, editBtn, deleteBtn)
                 );
             }
 
@@ -121,11 +125,16 @@ public class DeviceComponentsController {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("إضافة مكون جديد");
 
-        // ✅ تحميل الأصناف
+        // ✅ تحميل الأصناف مع كود الصنف
         ObservableList<String> itemsList = FXCollections.observableArrayList();
+        ObservableList<String> itemsCodeList = FXCollections.observableArrayList(); // قائمة الأكواد
+
         try (Connection conn = DatabaseConnection.getConnection()) {
-            ResultSet rs = conn.prepareStatement("SELECT ItemName FROM Items").executeQuery();
-            while (rs.next()) itemsList.add(rs.getString("ItemName"));
+            ResultSet rs = conn.prepareStatement("SELECT ItemName, ItemCode FROM Items").executeQuery();
+            while (rs.next()) {
+                itemsList.add(rs.getString("ItemName"));
+                itemsCodeList.add(rs.getString("ItemCode"));
+            }
         } catch (Exception e) { e.printStackTrace(); }
 
         // ✅ إنشاء ComboBox قابل للبحث
@@ -202,5 +211,4 @@ public class DeviceComponentsController {
         alert.setContentText(msg);
         alert.show();
     }
-
 }

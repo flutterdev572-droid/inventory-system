@@ -22,6 +22,8 @@
 
             <TableView fx:id="componentsTable" prefHeight="500">
                 <columns>
+                    <!-- تم إضافة عمود كود الصنف هنا -->
+                    <TableColumn fx:id="colItemCode" text="كود الصنف" prefWidth="120"/>
                     <TableColumn fx:id="colItemName" text="الصنف" prefWidth="200"/>
                     <TableColumn fx:id="colQuantity" text="الكمية" prefWidth="120"/>
                     <TableColumn fx:id="colEdit" text="تعديل" prefWidth="100"/>

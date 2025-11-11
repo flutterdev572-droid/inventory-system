@@ -48,6 +48,7 @@ public class SerialTrackingController {
     @FXML private Button showAllBtn;
     @FXML private Button exportExcelBtn;
     @FXML private TableView<UsageRow> usageTable;
+    @FXML private TableColumn<UsageRow, String> colItemCode;
     @FXML private TableColumn<UsageRow, String> colItem;
     @FXML private TableColumn<UsageRow, String> colExpected;
     @FXML private TableColumn<UsageRow, String> colUsed;
@@ -72,6 +73,7 @@ public class SerialTrackingController {
 
     @FXML
     public void initialize() {
+        colItemCode.setCellValueFactory(new PropertyValueFactory<>("itemCode"));
         colItem.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colExpected.setCellValueFactory(new PropertyValueFactory<>("expected"));
         colUsed.setCellValueFactory(new PropertyValueFactory<>("used"));
@@ -488,41 +490,40 @@ public class SerialTrackingController {
         String serial = serialCombo.getValue();
         if (serial == null || serial.isBlank()) {
             showAlert("اختر سيريال أولاً");
-            hideExitButton(); // ✅ إخفاء الزر إذا لم يكن هناك سيريال
+            hideExitButton();
             return;
         }
 
         Device device = deviceCombo.getValue();
         if (device == null) {
             showAlert("اختر جهاز أولاً");
-            hideExitButton(); // ✅ إخفاء الزر إذا لم يكن هناك جهاز
+            hideExitButton();
             return;
         }
 
         int deviceId = device.getId();
-
         usageList.clear();
 
-        String sql = """
-            SELECT 
-                I.ItemID, 
-                I.ItemName, 
-                ISNULL(DC.ExpectedQty, 0) AS ExpectedQty, 
-                ISNULL(SUM(SCU.Quantity), 0) AS UsedTotal, 
-                MAX(SCU.UsedAt) AS LastUsed
-            FROM SerialComponentUsage SCU
-            JOIN Items I ON SCU.ItemID = I.ItemID
-            LEFT JOIN (
-                SELECT ItemID, SUM(Quantity) AS ExpectedQty 
-                FROM DeviceComponents 
-                WHERE DeviceID = ? 
-                GROUP BY ItemID
-            ) DC ON DC.ItemID = I.ItemID
-            JOIN DeviceSerials DS ON SCU.SerialID = DS.SerialID
-            WHERE DS.SerialNumber = ?
-            GROUP BY I.ItemID, I.ItemName, DC.ExpectedQty
-            ORDER BY I.ItemName
-        """;
+        // ✅ تصحيح الاستعلام - استخدام String عادي بدلاً من Text Blocks
+        String sql = "SELECT " +
+                "    I.ItemID, " +
+                "    I.ItemName, " +
+                "    I.ItemCode, " +
+                "    ISNULL(DC.ExpectedQty, 0) AS ExpectedQty, " +
+                "    ISNULL(SUM(SCU.Quantity), 0) AS UsedTotal, " +
+                "    MAX(SCU.UsedAt) AS LastUsed " +
+                "FROM SerialComponentUsage SCU " +
+                "JOIN Items I ON SCU.ItemID = I.ItemID " +
+                "LEFT JOIN ( " +
+                "    SELECT ItemID, SUM(Quantity) AS ExpectedQty " +
+                "    FROM DeviceComponents " +
+                "    WHERE DeviceID = ? " +
+                "    GROUP BY ItemID " +
+                ") DC ON DC.ItemID = I.ItemID " +
+                "JOIN DeviceSerials DS ON SCU.SerialID = DS.SerialID " +
+                "WHERE DS.SerialNumber = ? " +
+                "GROUP BY I.ItemID, I.ItemName, I.ItemCode, DC.ExpectedQty " +
+                "ORDER BY I.ItemName";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -535,18 +536,19 @@ public class SerialTrackingController {
 
             while (rs.next()) {
                 String itemName = rs.getString("ItemName");
+                String itemCode = rs.getString("ItemCode");
                 double expected = rs.getDouble("ExpectedQty");
                 double used = rs.getDouble("UsedTotal");
                 Timestamp lastUsed = rs.getTimestamp("LastUsed");
 
                 String usedAt = lastUsed == null ? "-" : lastUsed.toString();
-                // ✅ هنا بنعرض اسم المستخدم الحالي بدل ID
                 String usedBy = CurrentUser.getName();
 
                 String status = computeStatus(expected, used);
 
                 rows.add(new UsageRow(
                         itemName,
+                        itemCode,
                         String.format("%.2f", expected),
                         String.format("%.2f", used),
                         status,
@@ -557,9 +559,8 @@ public class SerialTrackingController {
 
             if (rows.isEmpty()) {
                 showAlert("لا توجد بيانات استخدام لهذا السيريال.");
-                hideExitButton(); // ✅ إخفاء الزر إذا لم توجد بيانات
+                hideExitButton();
             } else {
-                // ✅ إظهار الزر إذا كانت هناك بيانات
                 exitDeviceBtn.setVisible(true);
                 exitDeviceBtn.setManaged(true);
             }
@@ -569,7 +570,7 @@ public class SerialTrackingController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            showAlert("حدث خطأ أثناء تحميل بيانات الاستخدام.");
+            showAlert("حدث خطأ أثناء تحميل بيانات الاستخدام: " + e.getMessage());
         }
     }
 
@@ -1202,7 +1203,8 @@ public class SerialTrackingController {
         cellStyle.setBorderRight(BorderStyle.THIN);
 
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"المكون", "المفروض", "المستخدم", "الحالة", "آخر استخدام", "المستخدم"};
+        // ✅ تحديث العناوين لإضافة كود الصنف
+        String[] headers = {"كود الصنف", "المكون", "المفروض", "المستخدم", "الحالة", "آخر استخدام", "المستخدم"};
 
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
@@ -1214,12 +1216,19 @@ public class SerialTrackingController {
         int rowNum = 1;
         for (UsageRow row : data) {
             Row excelRow = sheet.createRow(rowNum++);
-            Cell cell0 = excelRow.createCell(0); cell0.setCellValue(row.getItemName());
-            Cell cell1 = excelRow.createCell(1); cell1.setCellValue(row.getExpected());
-            Cell cell2 = excelRow.createCell(2); cell2.setCellValue(row.getUsed());
-            Cell cell3 = excelRow.createCell(3); cell3.setCellValue(row.getStatus());
-            Cell cell4 = excelRow.createCell(4); cell4.setCellValue(row.getUsedAt());
-            Cell cell5 = excelRow.createCell(5); cell5.setCellValue(row.getUsedBy());
+            // ✅ تحديث ترتيب الخلايا
+            Cell cell0 = excelRow.createCell(0); cell0.setCellValue(row.getItemCode());
+            Cell cell1 = excelRow.createCell(1); cell1.setCellValue(row.getItemName());
+            Cell cell2 = excelRow.createCell(2); cell2.setCellValue(row.getExpected());
+            Cell cell3 = excelRow.createCell(3); cell3.setCellValue(row.getUsed());
+            Cell cell4 = excelRow.createCell(4); cell4.setCellValue(row.getStatus());
+            Cell cell5 = excelRow.createCell(5); cell5.setCellValue(row.getUsedAt());
+            Cell cell6 = excelRow.createCell(6); cell6.setCellValue(row.getUsedBy());
+
+            // تطبيق الأنماط على الخلايا
+            for (int i = 0; i < 7; i++) {
+                excelRow.getCell(i).setCellStyle(cellStyle);
+            }
         }
 
         for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
@@ -1230,7 +1239,6 @@ public class SerialTrackingController {
 
         workbook.close();
     }
-
     private String computeStatus(double expected, double used) {
         if (expected <= 0 && used > 0) return "تجاوز (لا يوجد متوقع)";
         if (used > expected) return String.format("تجاوز (%.2f > %.2f)", used, expected);
@@ -1266,12 +1274,12 @@ public class SerialTrackingController {
         }
     }
 
-    // ✅ كائن عرض الصفوف
     public static class UsageRow {
-        private final String itemName, expected, used, status, usedAt, usedBy;
+        private final String itemName, itemCode, expected, used, status, usedAt, usedBy;
 
-        public UsageRow(String itemName, String expected, String used, String status, String usedAt, String usedBy) {
+        public UsageRow(String itemName, String itemCode, String expected, String used, String status, String usedAt, String usedBy) {
             this.itemName = itemName;
+            this.itemCode = itemCode; // أضفنا هذا
             this.expected = expected;
             this.used = used;
             this.status = status;
@@ -1280,6 +1288,7 @@ public class SerialTrackingController {
         }
 
         public String getItemName() { return itemName; }
+        public String getItemCode() { return itemCode; } // جيتر جديد
         public String getExpected() { return expected; }
         public String getUsed() { return used; }
         public String getStatus() { return status; }
